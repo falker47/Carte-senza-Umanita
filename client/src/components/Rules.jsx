@@ -58,7 +58,7 @@ const Rules = ({ onBack }) => {
             <ul className="space-y-2 text-lg">
               <li className="flex items-start">
                 <span className="text-blue-500 mr-2">•</span>
-                Ogni giocatore riceve un delle carte bianche (di default 10)
+                Ogni giocatore riceve 10 carte bianche (di default 10)
               </li>
               <li className="flex items-start">
                 <span className="text-blue-500 mr-2">•</span>
