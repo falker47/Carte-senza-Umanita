@@ -10,8 +10,9 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
   const [error, setError] = useState('');
   const [isConnecting, setIsConnecting] = useState(true);
   const [showRules, setShowRules] = useState(false);
+  const [showWakeUpMessage, setShowWakeUpMessage] = useState(false);
   const socket = useSocket();
-  
+
   // Aggiungi questo useEffect per monitorare lo stato della connessione
   useEffect(() => {
     if (socket) {
@@ -21,22 +22,22 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
           setError('');
         }
       };
-      
+
       const handleConnectError = (error) => {
         console.error('Errore connessione:', error);
         setIsConnecting(false);
         setError('Errore di connessione al server');
       };
-      
+
       // Aggiorna lo stato ogni volta che cambia la connessione
       socket.on('connect', updateConnectionStatus);
       socket.on('disconnect', updateConnectionStatus);
       socket.on('reconnect', updateConnectionStatus);
       socket.on('connect_error', handleConnectError);
-      
+
       // Imposta lo stato iniziale
       updateConnectionStatus();
-      
+
       return () => {
         socket.off('connect', updateConnectionStatus);
         socket.off('disconnect', updateConnectionStatus);
@@ -45,35 +46,50 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
       };
     }
   }, [socket]);
-  
+
+  // Effect per gestire il messaggio di "risveglio server"
+  useEffect(() => {
+    let timeout;
+    if (isConnecting) {
+      // Se sta ancora connettendo dopo 3 secondi, mostra il messaggio di risveglio
+      timeout = setTimeout(() => {
+        setShowWakeUpMessage(true);
+      }, 3000);
+    } else {
+      // Se si è connesso (o c'è un errore esplicito), nascondi il messaggio
+      setShowWakeUpMessage(false);
+    }
+    return () => clearTimeout(timeout);
+  }, [isConnecting]);
+
   const handleCreateRoom = () => {
     if (!localNickname.trim()) {
       setError('Inserisci un nickname per continuare');
       return;
     }
-    
+
     if (!socket) {
       setError('Connessione al server non disponibile. Riprova.');
       return;
     }
-    
+
     if (!socket.connected) {
       setError('Connessione al server in corso. Attendi un momento e riprova.');
       return;
     }
-    
+
     setNickname(localNickname);
     setError(''); // Pulisci errori precedenti
-    
+
     console.log('Emetto create-room con nickname:', localNickname);
-    
+
     // Timeout per gestire mancate risposte del server
     const timeout = setTimeout(() => {
       socket.off('room-players', handleRoomCreated);
       socket.off('error', handleError);
       setError('Timeout nella creazione della stanza. Riprova.');
     }, 10000); // 10 secondi di timeout
-    
+
     // Gestisci la creazione della stanza
     const handleRoomCreated = ({ players, host, code }) => {
       console.log('Stanza creata con codice:', code);
@@ -83,7 +99,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
       socket.off('room-players', handleRoomCreated);
       socket.off('error', handleError);
     };
-    
+
     // Gestisci errori del server
     const handleError = ({ message }) => {
       console.error('Errore dal server:', message);
@@ -92,46 +108,46 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
       socket.off('room-players', handleRoomCreated);
       socket.off('error', handleError);
     };
-    
+
     socket.on('room-players', handleRoomCreated);
     socket.on('error', handleError);
     socket.emit('create-room', { nickname: localNickname });
   };
-  
+
   const handleJoinRoom = () => {
     if (!localNickname.trim()) {
       setError('Inserisci un nickname per continuare');
       return;
     }
-  
+
     const upperCaseLocalRoomCode = localRoomCode.toUpperCase();
-  
+
     if (!upperCaseLocalRoomCode.trim()) {
       setError('Inserisci un codice stanza per continuare');
       return;
     }
-  
+
     if (!socket) {
       setError('Connessione al server non disponibile. Riprova.');
       return;
     }
-  
+
     if (!socket.connected) {
       setError('Connessione al server in corso. Attendi un momento e riprova.');
       return;
     }
-  
+
     setError(''); // Pulisci errori precedenti
-    
+
     console.log('Emetto join-room con nickname:', localNickname, 'e codice:', upperCaseLocalRoomCode);
-    
+
     // Timeout per gestire mancate risposte del server
     const timeout = setTimeout(() => {
       socket.off('room-players', handleRoomJoined);
       socket.off('error', handleJoinError);
       setError('Timeout nell\'accesso alla stanza. Riprova.');
     }, 10000); // 10 secondi di timeout
-    
+
     // Gestisci l'accesso riuscito alla stanza
     const handleRoomJoined = ({ players, host, code }) => {
       console.log('Accesso riuscito alla stanza:', code);
@@ -142,7 +158,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
       socket.off('room-players', handleRoomJoined);
       socket.off('error', handleJoinError);
     };
-    
+
     // Gestisci errori del server (incluso stanza non trovata)
     const handleJoinError = ({ message }) => {
       console.error('Errore dal server:', message);
@@ -151,17 +167,17 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
       socket.off('room-players', handleRoomJoined);
       socket.off('error', handleJoinError);
     };
-    
+
     socket.on('room-players', handleRoomJoined);
     socket.on('error', handleJoinError);
     socket.emit('join-room', { nickname: localNickname, roomCode: upperCaseLocalRoomCode });
   };
-  
+
   // Nuova funzione per gestire la pressione del tasto invio
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      
+
       // Se il nickname è compilato ma non il codice stanza, crea una stanza
       if (localNickname.trim() && !localRoomCode.trim()) {
         handleCreateRoom();
@@ -181,7 +197,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
   if (showRules) {
     return <Rules onBack={() => setShowRules(false)} />;
   }
-  
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-2 lg:p-4">
       <div className="hidden lg:block absolute top-4 right-4">
@@ -192,14 +208,14 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
         <div className="lg:hidden absolute top-1 right-1">
           <ThemeToggle />
         </div>
-        
+
         <h1 className="text-5xl font-extrabold text-center mb-1 mt-4 lg:mt-0 text-gray-800 dark:text-white tracking-tight">
           CARTE SENZA UMANITÀ
         </h1>
         <p className="text-center text-gray-600 dark:text-gray-300 mb-5 text-lg font-medium">
           Un gioco per persone orribili
         </p>
-        
+
         {/* Pulsante Regole */}
         <div className="text-center mb-6">
           <button
@@ -220,6 +236,19 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
           </div>
         )}
 
+        {/* Messaggio di attesa risveglio server */}
+        {isConnecting && !error && showWakeUpMessage && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded relative mb-5 animate-pulse" role="alert">
+            <div className="flex items-center">
+              <svg className="w-6 h-6 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="font-medium">Stiamo svegliando il server... Porta pazienza, ci vorrà massimo un minuto 😴➡️🙂</span>
+            </div>
+          </div>
+        )}
+
         <div className="mb-5">
           <label htmlFor="nickname" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
             👤 NICKNAME
@@ -236,11 +265,10 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
         </div>
 
         <button
-          className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
-            isConnecting || !socket?.connected
-              ? 'bg-gray-400 cursor-not-allowed text-gray-700'
-              : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-500/25'
-          }`}
+          className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${isConnecting || !socket?.connected
+            ? 'bg-gray-400 cursor-not-allowed text-gray-700'
+            : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-500/25'
+            }`}
           onClick={handleCreateRoom}
           disabled={isConnecting || !socket?.connected}
         >
@@ -269,11 +297,10 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
             style={{ textTransform: 'uppercase' }}
           />
           <button
-             className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${
-              isConnecting || !socket?.connected
-                ? 'bg-gray-400 cursor-not-allowed text-gray-700'
-                : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-green-500/25'
-            }`}
+            className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${isConnecting || !socket?.connected
+              ? 'bg-gray-400 cursor-not-allowed text-gray-700'
+              : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-green-500/25'
+              }`}
             onClick={handleJoinRoom}
             disabled={isConnecting || !socket?.connected}
           >
