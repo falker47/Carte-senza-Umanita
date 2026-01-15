@@ -10,7 +10,7 @@ const Lobby = ({ roomCode, nickname, setGameState, setRoomCode, initialPlayers }
   const [gameSettings, setGameSettings] = useState({
     maxPoints: 5,
     maxPlayers: 10,
-    handSize: 10  // Modificato da 7 a 10
+    handSize: 7
   });
   const [customPoints, setCustomPoints] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -258,7 +258,7 @@ const Lobby = ({ roomCode, nickname, setGameState, setRoomCode, initialPlayers }
                   value={gameSettings.handSize}
                   onChange={(e) => handleSettingChange('handSize', e.target.value)}
                 >
-                  {[7, 10, 12].map(value => (
+                  {[3, 5, 7, 10].map(value => (
                     <option key={value} value={value}>{value}</option>
                   ))}
                 </select>

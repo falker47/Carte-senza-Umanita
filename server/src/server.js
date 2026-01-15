@@ -144,10 +144,7 @@ io.on('connection', (socket) => {
     if (result.success) {
       // Send updated hand to the player who played
       const player = room.players.find(p => p.id === socket.id);
-      if (player) {
-        io.to(socket.id).emit('update-hand', player.hand);
-        console.log(`Inviata mano aggiornata al giocatore ${socket.id}:`, player.hand);
-      }
+      // Removed immediate update-hand emit to delay showing new cards until next round
 
       // Check if all players have played
       const allPlayed = room.allPlayersPlayed();
