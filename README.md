@@ -14,7 +14,7 @@ Versione italiana di **Cards Against Humanity** - Gioco multiplayer real-time di
 
 *   🌍 **Multiplayer Online Real-time**: Unisciti e gioca con amici istantaneamente.
 *   📱 **Design Responsive**: Ottimizzato per desktop, tablet e smartphone.
-*   🇮🇹 **Full Italian Localization**: Mazzo di carte completo e localizzato in italiano per il massimo divertimento.
+*   🇮🇹 **Full Italian Localization**: Mazzo completo di **650 carte** (417 Bianche e 233 Nere) localizzato in italiano per il massimo divertimento.
 
 ---
 
