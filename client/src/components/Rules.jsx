@@ -98,7 +98,7 @@ const Rules = ({ onBack }) => {
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h3 className="font-bold text-lg mb-2">3. Nuovo Round</h3>
                 <ul className="space-y-1">
-                  <li>• Tutti i giocatori pescano nuove carte bianche fino ad averne 10</li>
+                  <li>• Tutti i giocatori pescano nuove carte bianche fino ad averne 7 o il numero che si è stabilito a inizio partita</li>
                   <li>• Le nuove carte avranno un tag <span className="text-blue-500 font-bold">New</span> per riconoscerle</li>
                   <li>• Il giocatore successivo diventa il nuovo giudice</li>
                   <li>• Si ripete il processo</li>
