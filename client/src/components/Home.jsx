@@ -4,7 +4,7 @@ import { useTheme } from '../hooks/useTheme';
 import ThemeToggle from './ThemeToggle';
 import Rules from './Rules';
 
-const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
+const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlayers }) => {
   const [localNickname, setLocalNickname] = useState(nickname || '');
   const [localRoomCode, setLocalRoomCode] = useState('');
   const [error, setError] = useState('');
@@ -95,6 +95,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
       console.log('Stanza creata con codice:', code);
       clearTimeout(timeout);
       setRoomCode(code);
+      setInitialPlayers(players);
       setGameState('lobby');
       socket.off('room-players', handleRoomCreated);
       socket.off('error', handleError);
@@ -154,6 +155,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname }) => {
       clearTimeout(timeout);
       setNickname(localNickname);
       setRoomCode(upperCaseLocalRoomCode);
+      setInitialPlayers(players);
       setGameState('lobby');
       socket.off('room-players', handleRoomJoined);
       socket.off('error', handleJoinError);

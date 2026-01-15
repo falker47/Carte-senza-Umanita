@@ -22,6 +22,8 @@ const App = () => {
     return localStorage.getItem('roomCode') || '';
   });
 
+  const [initialPlayers, setInitialPlayers] = useState([]);
+
   // Salva lo stato nel localStorage quando cambia
   useEffect(() => {
     if (gameState !== 'home') {
@@ -151,6 +153,7 @@ const App = () => {
             setNickname={setNickname}
             setRoomCode={setRoomCode}
             nickname={nickname}
+            setInitialPlayers={setInitialPlayers}
           />
         );
       case 'lobby':
@@ -160,6 +163,7 @@ const App = () => {
             nickname={nickname}
             setGameState={setGameState}
             setRoomCode={setRoomCode}
+            initialPlayers={initialPlayers}
           />
         );
       case 'game':

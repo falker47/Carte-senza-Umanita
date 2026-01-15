@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSocket } from '../hooks/useSocket';
 import ThemeToggle from './ThemeToggle';
 
-const Lobby = ({ roomCode, nickname, setGameState, setRoomCode }) => {
-  const [players, setPlayers] = useState([]);
+const Lobby = ({ roomCode, nickname, setGameState, setRoomCode, initialPlayers }) => {
+  const [players, setPlayers] = useState(initialPlayers || []);
   const [isHost, setIsHost] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -25,7 +25,7 @@ const Lobby = ({ roomCode, nickname, setGameState, setRoomCode }) => {
 
     console.log('Lobby montata - Socket ID:', socket.id);
     console.log('Codice stanza ricevuto:', roomCode);
-    
+
     // Se non abbiamo un roomCode, torna alla home
     if (!roomCode) {
       console.error('Nessun codice stanza disponibile');
@@ -70,7 +70,7 @@ const Lobby = ({ roomCode, nickname, setGameState, setRoomCode }) => {
       setError('Codice stanza non disponibile');
       return;
     }
-    
+
     try {
       navigator.clipboard.writeText(roomCode);
       setCopied(true);
@@ -114,12 +114,12 @@ const Lobby = ({ roomCode, nickname, setGameState, setRoomCode }) => {
       setShowCustomInput(true);
       return;
     }
-    
+
     setGameSettings(prev => ({
       ...prev,
       [setting]: parseInt(value, 10)
     }));
-    
+
     if (setting === 'maxPoints' && value !== 'custom') {
       setShowCustomInput(false);
       setCustomPoints('');
@@ -152,7 +152,7 @@ const Lobby = ({ roomCode, nickname, setGameState, setRoomCode }) => {
         <div className="absolute top-1 right-1 lg:hidden">
           <ThemeToggle />
         </div>
-        
+
         <div className="flex justify-between items-center mb-6 mt-4 lg:mt-0">
           <h1 className="text-2xl font-bold">CARTE SENZA UMANITÀ</h1>
           <div className="flex items-center space-x-2">
