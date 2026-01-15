@@ -62,6 +62,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
 
       // Reset degli stati delle carte per nuovo round
       if (isNewRound) {
+        console.log('[DEBUG] isNewRound detected. Checking preservation logic...');
         setCardStates(prev => {
           // Identify if the current player is the one becoming judge or was the judge
           // Note: gameData in this closure is from the previous render (before update)
@@ -73,6 +74,16 @@ const Game = ({ roomCode, nickname, setGameState }) => {
 
           // Preserve new cards if I was the judge (didn't play) or am becoming the judge (won't play)
           const shouldPreserveNewCards = wasJudge || becomingJudge;
+
+          console.log('[DEBUG] Preservation Logic:', {
+            myId,
+            currentJudge: gameData.currentJudge,
+            nextJudge: data.currentJudge,
+            wasJudge,
+            becomingJudge,
+            shouldPreserveNewCards,
+            prevIndices: prev.newCardIndices
+          });
 
           return {
             playedCardIndices: [],
@@ -91,7 +102,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
     });
 
     socket.on('update-hand', (hand) => {
-      console.log('Received update-hand (inspect card text here):', hand);
+      console.log('Received update-hand:', hand);
 
       setGameData(prev => {
         // Detect new cards by content (check if card text was not in the previous hand)
@@ -102,8 +113,15 @@ const Game = ({ roomCode, nickname, setGameState }) => {
         const isHandSame = prev.hand.length === hand.length &&
           prev.hand.every((card, i) => card === hand[i]);
 
+        console.log('[DEBUG] update-hand:', {
+          prevHandLen: prev.hand.length,
+          newHandLen: hand.length,
+          isHandSame
+        });
+
         setCardStates(prevStates => {
           if (isHandSame) {
+            console.log('[DEBUG] Hand is same. Preserving newCardIndices:', prevStates.newCardIndices);
             // If hand hasn't changed, preserve existing new tags
             return prevStates;
           }
@@ -115,6 +133,8 @@ const Game = ({ roomCode, nickname, setGameState }) => {
               return !prev.hand.includes(card) ? index : -1;
             }).filter(index => index !== -1);
           }
+
+          console.log('[DEBUG] Hand changed. Calculated new indices:', newCardIndices);
 
           return {
             ...prevStates,
