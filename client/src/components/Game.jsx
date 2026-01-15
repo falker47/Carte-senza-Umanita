@@ -19,47 +19,47 @@ const Game = ({ roomCode, nickname, setGameState }) => {
     hasPlayed: false,
     playersPlayedCount: { played: 0, total: 0 } // Aggiungi questa riga
   });
-  
+
   // Nuovo stato per tracciare le carte giocate e nuove
   const [cardStates, setCardStates] = useState({
     playedCardIndices: [], // Indici delle carte giocate nel round corrente
     newCardIndices: [], // Indici delle carte nuove ricevute
     currentRound: 0 // Per tracciare i cambi di round
   });
-  
+
   const [judgeSelection, setJudgeSelection] = useState({
     selectedIndex: null,
     isConfirming: false
   });
-  
-  const [handSelection, setHandSelection] = useState({ 
+
+  const [handSelection, setHandSelection] = useState({
     selectedIndices: [],
-    isConfirming: false 
+    isConfirming: false
   });
-  
+
   const socket = useSocket();
-  
+
   useEffect(() => {
     if (!socket) return;
-    
+
     socket.on('game-update', (data) => {
-      console.log('Received game-update:', data); 
-      
+      console.log('Received game-update:', data);
+
       // Controlla se è iniziato un nuovo round
-      const isNewRound = data.roundStatus === 'playing' && 
-                        (gameData.roundStatus === 'roundEnd' || gameData.roundStatus === 'waiting');
-      
+      const isNewRound = data.roundStatus === 'playing' &&
+        (gameData.roundStatus === 'roundEnd' || gameData.roundStatus === 'waiting');
+
       setGameData(prev => ({
         ...prev,
-        ...data, 
-        hasPlayed: data.roundStatus === 'playing' && prev.roundStatus === 'playing' 
-          ? prev.hasPlayed 
+        ...data,
+        hasPlayed: data.roundStatus === 'playing' && prev.roundStatus === 'playing'
+          ? prev.hasPlayed
           : false,
-        selectedCard: data.roundStatus === 'playing' && prev.roundStatus === 'playing' 
-          ? prev.selectedCard 
+        selectedCard: data.roundStatus === 'playing' && prev.roundStatus === 'playing'
+          ? prev.selectedCard
           : null
       }));
-      
+
       // Reset degli stati delle carte per nuovo round
       if (isNewRound) {
         setCardStates(prev => ({
@@ -68,7 +68,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
           currentRound: prev.currentRound + 1
         }));
       }
-      
+
       if (data.roundStatus !== 'judging') {
         setJudgeSelection({ selectedIndex: null, isConfirming: false });
       }
@@ -79,14 +79,14 @@ const Game = ({ roomCode, nickname, setGameState }) => {
 
     socket.on('update-hand', (hand) => {
       console.log('Received update-hand (inspect card text here):', hand);
-      
+
       setGameData(prev => {
         const oldHandLength = prev.hand.length;
         const newHandLength = hand.length;
-        
+
         // Identifica le carte nuove basandosi sul round corrente
         let newCardIndices = [];
-        
+
         setCardStates(prevStates => {
           // Se siamo nel secondo round o successivi, tutte le carte nuove ricevute
           // sono considerate "nuove" (tipicamente le ultime carte della mano)
@@ -98,20 +98,20 @@ const Game = ({ roomCode, nickname, setGameState }) => {
               newCardIndices.push(i);
             }
           }
-          
+
           return {
             ...prevStates,
             newCardIndices: newCardIndices
           };
         });
-        
+
         return {
           ...prev,
           hand: hand
         };
       });
     });
-    
+
     socket.on('game-over', ({ winner }) => {
       setGameData(prev => ({
         ...prev,
@@ -125,6 +125,14 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       socket.off('game-over');
     };
   }, [socket, gameData.roundStatus]);
+
+  // Aggiunto useEffect per richiedere lo stato appena il componente monta
+  useEffect(() => {
+    if (socket && roomCode) {
+      console.log('Mount Game: richiedi stato aggiornato...');
+      socket.emit('request-game-state', { roomCode });
+    }
+  }, [socket, roomCode]);
 
   useEffect(() => {
     // Prevenzione refresh accidentali
@@ -146,12 +154,12 @@ const Game = ({ roomCode, nickname, setGameState }) => {
     console.log('gameData.roundStatus:', gameData.roundStatus);
     console.log('gameData.hasPlayed:', gameData.hasPlayed);
     console.log('isCurrentPlayerJudge():', isCurrentPlayerJudge());
-    
+
     // Non permettere selezione di carte già giocate
     if (cardStates.playedCardIndices.includes(cardIndex)) {
       return;
     }
-    
+
     if (gameData.roundStatus !== 'playing' || gameData.hasPlayed) {
       console.log('Condizioni non soddisfatte per selezionare carta');
       return;
@@ -160,13 +168,13 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       console.log('Il giocatore è il giudice, non può selezionare carte');
       return;
     }
-    
+
     const requiredCards = gameData.blackCard ? gameData.blackCard.blanks : 1;
-    
+
     setHandSelection(prev => {
       const currentSelected = [...prev.selectedIndices];
       const cardAlreadySelected = currentSelected.includes(cardIndex);
-      
+
       if (cardAlreadySelected) {
         // Rimuovi la carta se già selezionata
         return {
@@ -180,150 +188,150 @@ const Game = ({ roomCode, nickname, setGameState }) => {
           isConfirming: false
         };
       }
-      
+
       // Se abbiamo già il numero massimo di carte, non fare nulla
       return prev;
     });
-    
+
     console.log('Carte selezionate:', handSelection.selectedIndices);
   };
-  
+
   // Nuova funzione per confermare la selezione della carta
   const handleCardConfirm = () => {
     const requiredCards = gameData.blackCard ? gameData.blackCard.blanks : 1;
-    
+
     if (handSelection.selectedIndices.length !== requiredCards || handSelection.isConfirming) {
       return;
     }
-    
+
     setHandSelection(prev => ({ ...prev, isConfirming: true }));
-    
+
     // Marca le carte come giocate
     setCardStates(prev => ({
       ...prev,
       playedCardIndices: [...prev.playedCardIndices, ...handSelection.selectedIndices],
       newCardIndices: prev.newCardIndices.filter(index => !handSelection.selectedIndices.includes(index))
     }));
-    
+
     socket.emit('play-card', {
       roomCode,
       cardIndices: handSelection.selectedIndices // Invia array di indici
     });
-    
+
     setGameData(prev => ({
       ...prev,
       selectedCard: handSelection.selectedIndices,
       hasPlayed: true
     }));
-    
+
     // Reset della selezione dopo aver giocato
     setTimeout(() => {
       setHandSelection({ selectedIndices: [], isConfirming: false });
     }, 500);
   };
-  
+
   // Funzione per annullare la selezione della carta
   const handleCardCancel = () => {
     setHandSelection({ selectedIndices: [], isConfirming: false });
   };
-  
+
   // FUNZIONE MANCANTE - Gestione selezione carta del giudice
   const handleJudgeCardSelect = (cardIndex) => {
     console.log('handleJudgeCardSelect chiamata con cardIndex:', cardIndex);
     console.log('gameData.roundStatus:', gameData.roundStatus);
     console.log('isCurrentPlayerJudge():', isCurrentPlayerJudge());
-    
+
     if (gameData.roundStatus !== 'judging') {
       console.log('Non è il momento di giudicare');
       return;
     }
-    
+
     if (!isCurrentPlayerJudge()) {
       console.log('Il giocatore non è il giudice');
       return;
     }
-    
+
     console.log('Carta del giudice selezionata:', cardIndex);
     setJudgeSelection({
       selectedIndex: cardIndex,
       isConfirming: false
     });
   };
-  
+
   // Funzione per confermare la selezione del giudice
   const handleJudgeConfirm = () => {
     if (judgeSelection.selectedIndex === null || judgeSelection.isConfirming) {
       return;
     }
-    
+
     setJudgeSelection(prev => ({ ...prev, isConfirming: true }));
-    
+
     socket.emit('judge-select', {
       roomCode,
       cardIndex: judgeSelection.selectedIndex
     });
   };
-  
+
   // Funzione per annullare la selezione del giudice
   const handleJudgeCancel = () => {
     setJudgeSelection({ selectedIndex: null, isConfirming: false });
   };
-  
+
   const handleCardPlay = () => {
     console.log('handleCardPlay chiamata');
     console.log('gameData.selectedCard:', gameData.selectedCard);
-    
+
     if (gameData.selectedCard === null || gameData.selectedCard === undefined) {
       console.log('Nessuna carta selezionata, uscita dalla funzione');
       return;
     }
-    
+
     console.log('Invio play-card al server con cardIndex:', gameData.selectedCard);
     socket.emit('play-card', {
       roomCode,
       cardIndex: gameData.selectedCard
     });
-    
+
     setGameData(prev => ({
       ...prev,
       hasPlayed: true
     }));
   };
-  
+
   const handleLeaveGame = () => {
     socket.emit('leave-room', { roomCode });
     setGameState('home');
   };
-  
+
   const handleNextRound = () => {
     if (gameData.roundStatus !== 'roundEnd' || !isCurrentPlayerJudge()) return;
-    
+
     socket.emit('start-new-round', { roomCode });
   };
-  
+
   const isCurrentPlayerJudge = () => {
     const currentPlayer = gameData.players.find(p => p.nickname === nickname);
     return currentPlayer && currentPlayer.id === gameData.currentJudge;
   };
-  
+
   const getStatusMessage = () => {
     if (gameData.gameWinner) {
       return `${gameData.gameWinner.nickname} ha vinto la partita!`;
     }
-    
+
     if (gameData.roundStatus === 'waiting') {
       return 'In attesa dell\'inizio del round...';
     }
-    
+
     if (gameData.roundStatus === 'playing') {
       if (isCurrentPlayerJudge()) {
         return 'Sei il giudice di questo round. Attendi che gli altri giocatori scelgano le loro carte.';
       }
-      return gameData.hasPlayed 
-        ? 'Hai giocato la tua carta. Attendi che gli altri giocatori scelgano.' 
+      return gameData.hasPlayed
+        ? 'Hai giocato la tua carta. Attendi che gli altri giocatori scelgano.'
         : 'Scegli una carta bianca dalla tua mano.';
     }
-    
+
     if (gameData.roundStatus === 'judging') {
       if (isCurrentPlayerJudge()) {
         if (judgeSelection.selectedIndex !== null) {
@@ -333,7 +341,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       }
       return 'Il giudice sta scegliendo la carta vincente...';
     }
-    
+
     if (gameData.roundStatus === 'roundEnd') {
       if (gameData.roundWinner) {
         const winnerPlayer = gameData.players.find(p => p.id === gameData.roundWinner);
@@ -342,10 +350,10 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       }
       return 'Fine del round.';
     }
-    
+
     return '';
   };
-  
+
   const getJudgeName = () => {
     const judge = gameData.players.find(p => p.id === gameData.currentJudge);
     return judge ? judge.nickname : '';
@@ -359,7 +367,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
         <div className="flex items-center flex-shrink-0">
           <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Stanza: {roomCode}</span>
         </div>
-        
+
         {/* Centro: Titolo */}
         <div className="flex-1 flex justify-center min-w-0">
           <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-center">
@@ -367,11 +375,11 @@ const Game = ({ roomCode, nickname, setGameState }) => {
             <span className="sm:hidden">CSU</span>
           </h1>
         </div>
-        
+
         {/* Lato destro: Theme toggle e Esci */}
         <div className="flex items-center space-x-2 flex-shrink-0">
           <ThemeToggle />
-          <button 
+          <button
             onClick={handleLeaveGame}
             className="btn btn-secondary py-1 px-2 sm:px-3 text-xs sm:text-sm whitespace-nowrap"
           >
@@ -379,38 +387,36 @@ const Game = ({ roomCode, nickname, setGameState }) => {
           </button>
         </div>
       </div>
-      
+
       {/* Layout principale con griglia responsive ottimizzata */}
-      <div className={`grid grid-cols-1 gap-4 lg:gap-6 h-full ${
-        isCurrentPlayerJudge() 
-          ? 'lg:grid-cols-3' 
-          : 'lg:grid-cols-4'
-      }`}>
+      <div className={`grid grid-cols-1 gap-4 lg:gap-6 h-full ${isCurrentPlayerJudge()
+        ? 'lg:grid-cols-3'
+        : 'lg:grid-cols-4'
+        }`}>
         {/* Colonna sinistra - Lista giocatori (più compatta) */}
         <div className="lg:col-span-1 order-1 lg:order-1">
-          <PlayerList 
-            players={gameData.players} 
-            currentJudge={gameData.currentJudge} 
+          <PlayerList
+            players={gameData.players}
+            currentJudge={gameData.currentJudge}
             nickname={nickname}
             maxPoints={gameData.maxPoints}
           />
         </div>
-        
+
         {/* Colonna centrale - Contenuto principale del gioco (più spazio) */}
-        <div className={`order-2 lg:order-2 ${
-          isCurrentPlayerJudge() 
-            ? 'lg:col-span-2' 
-            : 'lg:col-span-2'
-        }`}>
+        <div className={`order-2 lg:order-2 ${isCurrentPlayerJudge()
+          ? 'lg:col-span-2'
+          : 'lg:col-span-2'
+          }`}>
           {gameData.gameWinner ? (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center relative overflow-hidden">
               {/* Effetto confetti con CSS - ottimizzato per mobile */}
               <div className="absolute inset-0 pointer-events-none">
                 <div className="confetti-container">
                   {[...Array(window.innerWidth < 768 ? 25 : 50)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="confetti" 
+                    <div
+                      key={i}
+                      className="confetti"
                       style={{
                         left: `${Math.random() * 100}%`,
                         animationDelay: `${Math.random() * 3}s`,
@@ -422,19 +428,19 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                   ))}
                 </div>
               </div>
-              
+
               {/* Contenuto principale della vittoria */}
               <div className="relative z-10 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md mx-auto border-4 border-yellow-400">
                 {/* Corona o trofeo */}
                 <div className="text-6xl mb-4 animate-bounce">
                   🏆
                 </div>
-                
+
                 {/* Messaggio di vittoria */}
                 <h1 className="text-4xl font-bold mb-4 text-yellow-600 dark:text-yellow-400 animate-pulse">
                   {gameData.gameWinner.nickname === nickname ? 'VITTORIA!' : 'PARTITA FINITA!'}
                 </h1>
-                
+
                 <div className="mb-6">
                   {gameData.gameWinner.nickname === nickname ? (
                     <div>
@@ -456,7 +462,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Classifica finale */}
                 <div className="mb-6 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                   <h3 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Classifica Finale</h3>
@@ -464,13 +470,12 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                     {gameData.players
                       .sort((a, b) => b.score - a.score)
                       .map((player, index) => (
-                        <div 
-                          key={player.id} 
-                          className={`flex justify-between items-center p-2 rounded ${
-                            index === 0 
-                              ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200' 
-                              : 'bg-white dark:bg-gray-600'
-                          }`}
+                        <div
+                          key={player.id}
+                          className={`flex justify-between items-center p-2 rounded ${index === 0
+                            ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                            : 'bg-white dark:bg-gray-600'
+                            }`}
                         >
                           <div className="flex items-center space-x-2">
                             <span className="font-bold">
@@ -486,19 +491,19 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                     }
                   </div>
                 </div>
-                
+
                 {/* Pulsanti di azione */}
                 <div className="space-y-3">
-                  <button 
+                  <button
                     onClick={handleLeaveGame}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105"
                   >
                     Torna alla Home
                   </button>
-                  
+
                   {/* Solo l'host può iniziare una nuova partita */}
                   {gameData.hostId === nickname && (
-                    <button 
+                    <button
                       onClick={() => {
                         // Qui potresti aggiungere la logica per iniziare una nuova partita
                         // Per ora mostra solo un messaggio
@@ -529,7 +534,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                   </p>
                 </div>
               )}
-              
+
               {/* Mostra la carta nera solo se il gioco non è finito */}
               {gameData.blackCard && (
                 <div className="mb-4">
@@ -542,21 +547,21 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                     )}
                   </div>
                   <div className="max-w-md mx-auto">
-                    <Card 
-                      type="black" 
-                      text={gameData.blackCard.text} 
+                    <Card
+                      type="black"
+                      text={gameData.blackCard.text}
                       blanks={gameData.blackCard.blanks}
                     />
                   </div>
                 </div>
               )}
-              
+
               {/* Resto del contenuto esistente per le fasi di gioco normali */}
               {gameData.roundStatus === 'judging' && (
                 <div>
                   <h2 className="text-lg font-medium mb-2">Carte Giocate</h2>
                   {console.log('[CLIENT] Rendering playedCards for judge:', JSON.stringify(gameData.playedCards))}
-                  
+
                   {/* Pannello di controllo per il giudice - SPOSTATO IN ALTO CON DIMENSIONI FISSE */}
                   {isCurrentPlayerJudge() && (
                     <div className="mb-4 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg control-panel-fixed !hidden lg:!block">
@@ -564,18 +569,17 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                         {judgeSelection.selectedIndex !== null ? (
                           <>
                             <div className="flex space-x-3">
-                              <button 
+                              <button
                                 onClick={handleJudgeConfirm}
                                 disabled={judgeSelection.isConfirming}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                                  judgeSelection.isConfirming 
-                                    ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                                    : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                }`}
+                                className={`px-6 py-2 rounded-lg font-medium transition-all ${judgeSelection.isConfirming
+                                  ? 'bg-gray-400 cursor-not-allowed text-gray-600'
+                                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                  }`}
                               >
                                 {judgeSelection.isConfirming ? 'Confermando...' : 'Conferma'}
                               </button>
-                              <button 
+                              <button
                                 onClick={handleJudgeCancel}
                                 disabled={judgeSelection.isConfirming}
                                 className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all disabled:opacity-50"
@@ -592,7 +596,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="flex flex-wrap justify-center gap-4">
                     {gameData.playedCards.map((playedCardObject, index) => {
                       // Gestisci la struttura delle carte
@@ -604,11 +608,11 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                         // Carta singola - può essere stringa o oggetto
                         cardText = typeof playedCardObject.card === 'string' ? playedCardObject.card : playedCardObject.card.text;
                       }
-                      
+
                       return (
-                        <Card 
+                        <Card
                           key={index}
-                          type="white" 
+                          type="white"
                           text={cardText}
                           onClick={isCurrentPlayerJudge() ? () => handleJudgeCardSelect(index) : undefined}
                           isSelectable={isCurrentPlayerJudge()}
@@ -621,7 +625,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                   </div>
                 </div>
               )}
-              
+
               {gameData.roundStatus === 'roundEnd' && gameData.roundWinner && gameData.winningCardText && (
                 <div className="mt-6">
                   <h2 className="text-lg font-medium mb-2">Carta Vincente</h2>
@@ -631,15 +635,15 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                         {gameData.players.find(p => p.id === gameData.roundWinner)?.nickname || 'Giocatore Sconosciuto'}
                       </span> ha vinto questo round!
                     </p>
-                    <Card 
-                      type="white" 
+                    <Card
+                      type="white"
                       text={gameData.winningCardText}
                       isWinner={true}
                       isJudging={true}
                     />
-                    
+
                     {isCurrentPlayerJudge() && (
-                      <button 
+                      <button
                         onClick={handleNextRound}
                         className="mt-4 btn btn-primary"
                       >
@@ -652,7 +656,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
             </>
           )}
         </div>
-        
+
         {/* Colonna destra - Mano del giocatore ottimizzata */}
         {!isCurrentPlayerJudge() && (
           <div className="lg:col-span-1 order-3 flex flex-col">
@@ -665,7 +669,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                       {(() => {
                         const requiredCards = gameData.blackCard ? gameData.blackCard.blanks : 1;
                         const selectedCount = handSelection.selectedIndices.length;
-                        
+
                         if (selectedCount === 0) {
                           return (
                             <p className="text-gray-600 dark:text-gray-400 text-sm text-center">
@@ -678,7 +682,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                               <p className="text-blue-600 dark:text-blue-400 text-sm mb-2">
                                 {selectedCount}/{requiredCards} carte selezionate
                               </p>
-                              <button 
+                              <button
                                 onClick={handleCardCancel}
                                 className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all text-sm"
                               >
@@ -689,18 +693,17 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                         } else {
                           return (
                             <div className="flex space-x-3">
-                              <button 
+                              <button
                                 onClick={handleCardConfirm}
                                 disabled={handSelection.isConfirming}
-                                className={`px-6 py-2 rounded-lg font-medium transition-all ${
-                                  handSelection.isConfirming 
-                                    ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                                    : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                }`}
+                                className={`px-6 py-2 rounded-lg font-medium transition-all ${handSelection.isConfirming
+                                  ? 'bg-gray-400 cursor-not-allowed text-gray-600'
+                                  : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                  }`}
                               >
                                 {handSelection.isConfirming ? 'Confermando...' : 'Conferma'}
                               </button>
-                              <button 
+                              <button
                                 onClick={handleCardCancel}
                                 disabled={handSelection.isConfirming}
                                 className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all disabled:opacity-50"
@@ -714,7 +717,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Contenitore carte ottimizzato */}
                 <div className="flex-1 relative">
                   <div className="h-full overflow-y-auto custom-scrollbar" style={{ maxHeight: 'calc(100vh - 350px)' }}>
@@ -725,11 +728,11 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                           const isPending = isSelected && handSelection.isConfirming;
                           const isPlayed = cardStates.playedCardIndices.includes(index);
                           const isNew = cardStates.newCardIndices.includes(index);
-                          
+
                           return (
-                            <Card 
+                            <Card
                               key={index}
-                              type="white" 
+                              type="white"
                               text={card}
                               onClick={!gameData.hasPlayed && !isPlayed ? () => handleCardSelect(index) : undefined}
                               isSelectable={!gameData.hasPlayed && !isPlayed}
@@ -747,7 +750,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Gradiente di fade ottimizzato - posizionato correttamente */}
                   {gameData.hand && gameData.hand.length > 4 && (
                     <div className="absolute bottom-0 left-0 right-1 h-4 card-container-gradient pointer-events-none"></div>
@@ -758,7 +761,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
           </div>
         )}
       </div>
-      
+
       {/* Footer sticky per mobile - pannello di controllo carte
       {!isCurrentPlayerJudge() && gameData.roundStatus === 'playing' && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-3 z-50">
@@ -802,7 +805,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
           </div>
         </div>
       )} */}
-      
+
       {/* Footer sticky per mobile - pannello di controllo giudice */}
       {isCurrentPlayerJudge() && gameData.roundStatus === 'judging' && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 z-50">
@@ -810,18 +813,17 @@ const Game = ({ roomCode, nickname, setGameState }) => {
             <div className="flex flex-col items-center justify-center h-full">
               {judgeSelection.selectedIndex !== null ? (
                 <div className="flex space-x-2">
-                  <button 
+                  <button
                     onClick={handleJudgeConfirm}
                     disabled={judgeSelection.isConfirming}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${
-                      judgeSelection.isConfirming 
-                        ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
-                        : 'bg-blue-500 hover:bg-blue-600 text-white'
-                    }`}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${judgeSelection.isConfirming
+                      ? 'bg-gray-400 cursor-not-allowed text-gray-600'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      }`}
                   >
                     {judgeSelection.isConfirming ? 'Confermando...' : 'Conferma'}
                   </button>
-                  <button 
+                  <button
                     onClick={handleJudgeCancel}
                     disabled={judgeSelection.isConfirming}
                     className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all disabled:opacity-50 text-sm"

@@ -16,7 +16,7 @@ app.use(express.json());
 
 const server = http.createServer(app);
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
+  origin: process.env.NODE_ENV === 'production'
     ? 'https://carte-senza-umanita.onrender.com'  // URL aggiornato del client
     : 'http://localhost:5173',
   methods: ['GET', 'POST'],
@@ -26,7 +26,7 @@ const corsOptions = {
 // Modifica anche la configurazione Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: process.env.NODE_ENV === 'production' 
+    origin: process.env.NODE_ENV === 'production'
       ? 'https://carte-senza-umanita.onrender.com'  // URL aggiornato del client
       : '*',
     credentials: true
@@ -53,15 +53,15 @@ io.on('connection', (socket) => {
   // Gestione creazione stanza
   socket.on('create-room', ({ nickname }) => {
     console.log(`Creazione stanza richiesta da ${socket.id} con nickname: ${nickname}`);
-    
+
     const { roomCode } = gameManager.createRoom(socket.id, nickname);
     console.log(`Stanza creata con codice: ${roomCode}`);
-    
+
     socket.join(roomCode);
-    
+
     const players = gameManager.getPlayersInRoom(roomCode);
     console.log(`Emetto room-players per stanza ${roomCode}:`, { players, host: socket.id, code: roomCode });
-    
+
     io.to(roomCode).emit('room-players', {
       players,
       host: socket.id,
@@ -72,20 +72,20 @@ io.on('connection', (socket) => {
   // Gestione ingresso in stanza
   socket.on('join-room', ({ nickname, roomCode }) => {
     const result = gameManager.joinRoom(socket.id, nickname, roomCode);
-    
+
     if (result.success) {
       socket.join(roomCode);
-      
+
       const players = gameManager.getPlayersInRoom(roomCode);
       const hostId = gameManager.rooms[roomCode].hostId;
-      
+
       // Invia lo stato della stanza al nuovo giocatore immediatamente
       socket.emit('room-players', {
         players,
         host: hostId,
         code: roomCode
       });
-      
+
       // Poi invia l'aggiornamento a tutti gli altri nella stanza
       socket.to(roomCode).emit('room-players', {
         players,
@@ -108,7 +108,7 @@ io.on('connection', (socket) => {
     if (result.success) {
       console.log(`Gioco avviato nella stanza ${roomCode}`);
       io.to(roomCode).emit('game-started'); // Client uses this to change view to Game.jsx
-      
+
       // Send initial game state immediately after starting
       const initialGameState = gameManager.getGameState(roomCode);
       if (initialGameState) {
@@ -140,7 +140,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const result = gameManager.playWhiteCard(roomCode, socket.id, cardIndices); 
+    const result = gameManager.playWhiteCard(roomCode, socket.id, cardIndices);
     if (result.success) {
       // Send updated hand to the player who played
       const player = room.players.find(p => p.id === socket.id);
@@ -150,18 +150,18 @@ io.on('connection', (socket) => {
       }
 
       // Check if all players have played
-      const allPlayed = room.allPlayersPlayed(); 
-      console.log(`Room ${roomCode}: allPlayersPlayed() returned ${allPlayed}`); 
-      
+      const allPlayed = room.allPlayersPlayed();
+      console.log(`Room ${roomCode}: allPlayersPlayed() returned ${allPlayed}`);
+
       let gameStateForUpdate = room.getGameState();
 
       if (allPlayed) {
         room.setRoundStatus('judging');
         console.log(`Room ${roomCode}: All players played, server-side roundStatus set to judging.`);
-        gameStateForUpdate = room.getGameState(); 
-        gameStateForUpdate.playedCards = room.getPlayedCards(); 
+        gameStateForUpdate = room.getGameState();
+        gameStateForUpdate.playedCards = room.getPlayedCards();
       }
-      
+
       io.to(roomCode).emit('game-update', gameStateForUpdate);
       console.log(`Room ${roomCode}: Emesso game-update dopo play-card. Stato:`, gameStateForUpdate.roundStatus);
 
@@ -174,7 +174,7 @@ io.on('connection', (socket) => {
   // AGGIUNGI QUESTO NUOVO GESTORE PER LA SELEZIONE DEL GIUDICE
   socket.on('judge-select', ({ roomCode, cardIndex }) => {
     console.log(`Richiesta judge-select per stanza ${roomCode} da ${socket.id} con cardIndex: ${cardIndex}`);
-    
+
     const result = gameManager.judgeSelectsWinner(roomCode, socket.id, cardIndex);
 
     if (result && result.success) {
@@ -212,41 +212,60 @@ io.on('connection', (socket) => {
     const room = gameManager.rooms[roomCode];
 
     if (!room) {
-        socket.emit('error', { message: 'Stanza non trovata.' });
-        return;
+      socket.emit('error', { message: 'Stanza non trovata.' });
+      return;
     }
 
     // Add any necessary validation (e.g., is the game over? is it the right time to start a new round?)
     if (room.gameOver) {
-        socket.emit('error', { message: 'Il gioco è terminato. Impossibile avviare un nuovo round.' });
-        io.to(roomCode).emit('game-update', room.getGameState()); // Send final state
-        return;
+      socket.emit('error', { message: 'Il gioco è terminato. Impossibile avviare un nuovo round.' });
+      io.to(roomCode).emit('game-update', room.getGameState()); // Send final state
+      return;
     }
 
     if (room.roundStatus !== 'roundEnd') {
-        socket.emit('error', { message: 'Non è possibile avviare un nuovo round ora.' });
-        // Optionally send current state if it helps client debug or understand
-        // io.to(roomCode).emit('game-update', room.getGameState()); 
-        return;
+      socket.emit('error', { message: 'Non è possibile avviare un nuovo round ora.' });
+      // Optionally send current state if it helps client debug or understand
+      // io.to(roomCode).emit('game-update', room.getGameState()); 
+      return;
     }
 
     const result = gameManager.startNewRound(roomCode, socket.id); // socket.id might be used for validation if needed
 
     if (result.success) {
-        io.to(roomCode).emit('game-update', result.gameState);
-        console.log(`[Server] Stanza ${roomCode}: Nuovo round avviato su richiesta. Stato:`, result.gameState.roundStatus);
-        // Send updated hands to all players for the new round
-        if (room && room.players) {
-            room.players.forEach(p => {
-                if (p.hand) { // Ensure player object has hand property
-                    io.to(p.id).emit('update-hand', p.hand);
-                }
-            });
-        }
+      io.to(roomCode).emit('game-update', result.gameState);
+      console.log(`[Server] Stanza ${roomCode}: Nuovo round avviato su richiesta. Stato:`, result.gameState.roundStatus);
+      // Send updated hands to all players for the new round
+      if (room && room.players) {
+        room.players.forEach(p => {
+          if (p.hand) { // Ensure player object has hand property
+            io.to(p.id).emit('update-hand', p.hand);
+          }
+        });
+      }
     } else {
-        socket.emit('error', { message: result.error || 'Errore durante l\'avvio del nuovo round.' });
+      socket.emit('error', { message: result.error || 'Errore durante l\'avvio del nuovo round.' });
     }
-});
+  });
+
+  // AGGIUNTO: Gestione richiesta stato gioco (per client lenti a caricare)
+  socket.on('request-game-state', ({ roomCode }) => {
+    console.log(`Richiesta stato gioco da ${socket.id} per stanza ${roomCode}`);
+    const room = gameManager.rooms[roomCode];
+
+    if (room && room.gameStarted) {
+      // Invia stato del gioco
+      const gameState = gameManager.getGameState(roomCode);
+      socket.emit('game-update', gameState);
+
+      // Invia mano del giocatore
+      const player = room.players.find(p => p.id === socket.id);
+      if (player) {
+        socket.emit('update-hand', player.hand);
+        console.log(`Inviato stato recuperato e mano a ${socket.id}`);
+      }
+    }
+  });
 
   // Altri gestori di eventi socket...
 
@@ -254,42 +273,42 @@ io.on('connection', (socket) => {
   // Gestione uscita volontaria dalla stanza
   socket.on('leave-room', ({ roomCode }) => {
     console.log(`Giocatore ${socket.id} sta uscendo dalla stanza ${roomCode}`);
-    
+
     // Rimuovi il giocatore dalla stanza socket.io
     socket.leave(roomCode);
-    
+
     // Gestione disconnessione
     socket.on('rejoin-room', ({ nickname, roomCode }) => {
       console.log(`Tentativo di riconnessione da ${socket.id} a stanza ${roomCode} con nickname ${nickname}`);
-      
+
       const result = gameManager.rejoinRoom(socket.id, nickname, roomCode);
-      
+
       if (result.success) {
         socket.join(roomCode);
-        
+
         const players = gameManager.getPlayersInRoom(roomCode);
         const hostId = gameManager.rooms[roomCode].hostId;
         const room = gameManager.rooms[roomCode];
-        
+
         socket.emit('rejoin-success', {
           players,
           host: hostId,
           code: roomCode,
           gameStarted: room.gameStarted
         });
-        
+
         // Se il gioco è iniziato, invia lo stato del gioco
         if (room.gameStarted) {
           const gameState = gameManager.getGameState(roomCode);
           socket.emit('game-update', gameState);
-          
+
           // Invia la mano del giocatore
           const player = room.players.find(p => p.id === socket.id);
           if (player) {
             socket.emit('hand-update', { hand: player.hand });
           }
         }
-        
+
         // Notifica gli altri giocatori
         socket.to(roomCode).emit('room-players', {
           players,
@@ -300,11 +319,11 @@ io.on('connection', (socket) => {
         socket.emit('rejoin-failed', { message: result.error });
       }
     });
-    
+
     // Gestione disconnessione improvvisa
     socket.on('disconnect', () => {
       console.log(`Client disconnesso: ${socket.id}`);
-      
+
       const roomCode = gameManager.playerRooms[socket.id];
       if (roomCode) {
         const room = gameManager.rooms[roomCode];
@@ -322,7 +341,7 @@ io.on('connection', (socket) => {
         }
       }
     });
-    
+
     // Conferma al giocatore che è uscito
     socket.emit('left-room');
   });
