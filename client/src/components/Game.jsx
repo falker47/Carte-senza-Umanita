@@ -62,11 +62,24 @@ const Game = ({ roomCode, nickname, setGameState }) => {
 
       // Reset degli stati delle carte per nuovo round
       if (isNewRound) {
-        setCardStates(prev => ({
-          playedCardIndices: [],
-          newCardIndices: [], // Reset delle carte nuove quando inizia un nuovo round
-          currentRound: prev.currentRound + 1
-        }));
+        setCardStates(prev => {
+          // Identify if the current player is the one becoming judge or was the judge
+          // Note: gameData in this closure is from the previous render (before update)
+          const currentPlayer = gameData.players.find(p => p.nickname === nickname);
+          const myId = currentPlayer ? currentPlayer.id : null;
+
+          const wasJudge = gameData.currentJudge === myId;
+          const becomingJudge = data.currentJudge === myId;
+
+          // Preserve new cards if I was the judge (didn't play) or am becoming the judge (won't play)
+          const shouldPreserveNewCards = wasJudge || becomingJudge;
+
+          return {
+            playedCardIndices: [],
+            newCardIndices: shouldPreserveNewCards ? prev.newCardIndices : [],
+            currentRound: prev.currentRound + 1
+          };
+        });
       }
 
       if (data.roundStatus !== 'judging') {
@@ -83,19 +96,31 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       setGameData(prev => {
         // Detect new cards by content (check if card text was not in the previous hand)
         // If previous hand was empty, it's the first deal (or reload), so no cards should be marked "new".
-        let newCardIndices = [];
-        if (prev.hand.length > 0) {
-          newCardIndices = hand.map((card, index) => {
-            // We check if the card existed in the previous hand.
-            // However, duplicates handling is tricky. Simple includes is a good 99% heuristic.
-            return !prev.hand.includes(card) ? index : -1;
-          }).filter(index => index !== -1);
-        }
 
-        setCardStates(prevStates => ({
-          ...prevStates,
-          newCardIndices: newCardIndices
-        }));
+        // FIX: Check if hand is effectively the same (idempotent update)
+        // This prevents clearing "new" tags when the server sends the same hand again (e.g. at round start)
+        const isHandSame = prev.hand.length === hand.length &&
+          prev.hand.every((card, i) => card === hand[i]);
+
+        setCardStates(prevStates => {
+          if (isHandSame) {
+            // If hand hasn't changed, preserve existing new tags
+            return prevStates;
+          }
+
+          let newCardIndices = [];
+          if (prev.hand.length > 0) {
+            newCardIndices = hand.map((card, index) => {
+              // We check if the card existed in the previous hand.
+              return !prev.hand.includes(card) ? index : -1;
+            }).filter(index => index !== -1);
+          }
+
+          return {
+            ...prevStates,
+            newCardIndices: newCardIndices
+          };
+        });
 
         return {
           ...prev,
