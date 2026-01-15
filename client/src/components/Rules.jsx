@@ -4,7 +4,7 @@ import ThemeToggle from './ThemeToggle';
 const Rules = ({ onBack }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-4xl bg-white dark:bg-gray-800 shadow-2xl rounded-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative" style={{padding: '27px'}}>
+      <div className="w-full max-w-4xl bg-white dark:bg-gray-800 shadow-2xl rounded-2xl border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative" style={{ padding: '27px' }}>
         {/* Container sticky per i controlli in alto */}
         <div className="sticky top-0 flex justify-between items-center mb-4 bg-white dark:bg-gray-800 py-2 z-10">
           <ThemeToggle />
@@ -17,7 +17,7 @@ const Rules = ({ onBack }) => {
             </svg>
           </button>
         </div>
-        
+
         {/* Titolo centrato */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-800 dark:text-white">
@@ -32,20 +32,20 @@ const Rules = ({ onBack }) => {
               ⚠️ <span className="ml-2">Avvertenze</span>
             </h2>
             <p className="text-yellow-700 dark:text-yellow-300 leading-relaxed">
-              Questo gioco contiene contenuti per adulti e umorismo nero. È destinato a un pubblico 
-              maturo e dovrebbe essere giocato solo tra persone che si conoscono bene e condividono 
+              Questo gioco contiene contenuti per adulti e umorismo nero. È destinato a un pubblico
+              maturo e dovrebbe essere giocato solo tra persone che si conoscono bene e condividono
               lo stesso senso dell'umorismo. Rispettate sempre i limiti degli altri giocatori.
             </p>
           </section>
-          
+
           {/* Obiettivo del gioco */}
           <section>
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
               🎯 <span className="ml-2">Obiettivo del Gioco</span>
             </h2>
             <p className="text-lg leading-relaxed">
-              Carte Senza Umanità è un gioco di carte per persone orribili. Il gioco consiste nel creare 
-              le combinazioni più divertenti, assurde o inappropriate possibili abbinando le carte nere 
+              Carte Senza Umanità è un gioco di carte per persone orribili. Il gioco consiste nel creare
+              le combinazioni più divertenti, assurde o inappropriate possibili abbinando le carte nere
               (domande o frasi con spazi vuoti) alle carte bianche (risposte).
             </p>
           </section>
@@ -58,7 +58,7 @@ const Rules = ({ onBack }) => {
             <ul className="space-y-2 text-lg">
               <li className="flex items-start">
                 <span className="text-blue-500 mr-2">•</span>
-                Ogni giocatore riceve 10 carte bianche (di default 10)
+                Ogni giocatore riceve delle carte bianche (di default 7)
               </li>
               <li className="flex items-start">
                 <span className="text-blue-500 mr-2">•</span>
@@ -85,7 +85,7 @@ const Rules = ({ onBack }) => {
                   <li>• Le carte scelte vengono inviate al giudice in modo anonimo</li>
                 </ul>
               </div>
-              
+
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h3 className="font-bold text-lg mb-2">2. Fase di Giudizio</h3>
                 <ul className="space-y-1">
@@ -94,11 +94,12 @@ const Rules = ({ onBack }) => {
                   <li>• Il giocatore che ha giocato la carta vincente ottiene 1 punto</li>
                 </ul>
               </div>
-              
+
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                 <h3 className="font-bold text-lg mb-2">3. Nuovo Round</h3>
                 <ul className="space-y-1">
                   <li>• Tutti i giocatori pescano nuove carte bianche fino ad averne 10</li>
+                  <li>• Le nuove carte avranno un tag <span className="text-blue-500 font-bold">New</span> per riconoscerle</li>
                   <li>• Il giocatore successivo diventa il nuovo giudice</li>
                   <li>• Si ripete il processo</li>
                 </ul>
@@ -112,8 +113,8 @@ const Rules = ({ onBack }) => {
               🏆 <span className="ml-2">Come si Vince</span>
             </h2>
             <p className="text-lg leading-relaxed">
-              Il primo giocatore a raggiungere il numero di punti stabilito (di default 5 punti) 
-              vince la partita. Il numero di punti necessari per vincere può essere modificato 
+              Il primo giocatore a raggiungere il numero di punti stabilito (di default 5 punti)
+              vince la partita. Il numero di punti necessari per vincere può essere modificato
               nelle impostazioni della stanza.
             </p>
           </section>
