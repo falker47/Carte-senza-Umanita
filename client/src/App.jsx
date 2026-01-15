@@ -13,11 +13,11 @@ const App = () => {
     const savedState = localStorage.getItem('gameState');
     return savedState || 'home';
   });
-  
+
   const [nickname, setNickname] = useState(() => {
     return localStorage.getItem('nickname') || '';
   });
-  
+
   const [roomCode, setRoomCode] = useState(() => {
     return localStorage.getItem('roomCode') || '';
   });
@@ -45,13 +45,13 @@ const App = () => {
     setNickname('');
     setRoomCode('');
   };
-  
+
   const [socket, setSocket] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    const isDarkMode = localStorage.getItem('darkMode') === 'true' || 
-                      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDarkMode = localStorage.getItem('darkMode') === 'true' ||
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
     setDarkMode(isDarkMode);
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -62,20 +62,20 @@ const App = () => {
 
   // Modifica la gestione del socket
   useEffect(() => {
-    const serverUrl = import.meta.env.PROD 
+    const serverUrl = import.meta.env.PROD
       ? import.meta.env.VITE_APP_SERVER_URL || 'https://carte-senza-umanita-server.onrender.com'
       : 'http://localhost:3001';
-    
+
     console.log('Ambiente:', import.meta.env.PROD ? 'PRODUZIONE' : 'SVILUPPO');
     console.log('VITE_APP_SERVER_URL:', import.meta.env.VITE_APP_SERVER_URL);
     console.log('URL finale del server:', serverUrl);
 
     const newSocket = io(serverUrl, {
-      transports: ['polling'],
-      timeout: 20000,
+      transports: ['polling', 'websocket'],
+      timeout: 60000,
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
     });
 
     setSocket(newSocket);
@@ -110,9 +110,9 @@ const App = () => {
   useEffect(() => {
     if (gameState !== 'home' && nickname && roomCode && socket?.connected) {
       console.log('Tentativo di riconnessione a:', roomCode, 'con nickname:', nickname);
-      
+
       socket.emit('rejoin-room', { nickname, roomCode });
-      
+
       socket.on('rejoin-success', (data) => {
         console.log('Riconnessione riuscita:', data);
         if (data.gameStarted) {
@@ -121,7 +121,7 @@ const App = () => {
           setGameState('lobby');
         }
       });
-      
+
       socket.on('rejoin-failed', (error) => {
         console.log('Riconnessione fallita:', error);
         clearGameState();
@@ -132,13 +132,13 @@ const App = () => {
   const toggleTheme = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
-    
+
     if (newDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    
+
     localStorage.setItem('darkMode', newDarkMode.toString());
   };
 
@@ -146,28 +146,28 @@ const App = () => {
     switch (gameState) {
       case 'home':
         return (
-          <Home 
-            setGameState={setGameState} 
-            setNickname={setNickname} 
+          <Home
+            setGameState={setGameState}
+            setNickname={setNickname}
             setRoomCode={setRoomCode}
             nickname={nickname}
           />
         );
       case 'lobby':
         return (
-          <Lobby 
-            roomCode={roomCode} 
-            nickname={nickname} 
-            setGameState={setGameState} 
+          <Lobby
+            roomCode={roomCode}
+            nickname={nickname}
+            setGameState={setGameState}
             setRoomCode={setRoomCode}
           />
         );
       case 'game':
         return (
-          <Game 
-            roomCode={roomCode} 
-            nickname={nickname} 
-            setGameState={setGameState} 
+          <Game
+            roomCode={roomCode}
+            nickname={nickname}
+            setGameState={setGameState}
           />
         );
       default:
