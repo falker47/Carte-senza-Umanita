@@ -81,29 +81,21 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       console.log('Received update-hand (inspect card text here):', hand);
 
       setGameData(prev => {
-        const oldHandLength = prev.hand.length;
-        const newHandLength = hand.length;
-
-        // Identifica le carte nuove basandosi sul round corrente
+        // Detect new cards by content (check if card text was not in the previous hand)
+        // If previous hand was empty, it's the first deal (or reload), so no cards should be marked "new".
         let newCardIndices = [];
+        if (prev.hand.length > 0) {
+          newCardIndices = hand.map((card, index) => {
+            // We check if the card existed in the previous hand.
+            // However, duplicates handling is tricky. Simple includes is a good 99% heuristic.
+            return !prev.hand.includes(card) ? index : -1;
+          }).filter(index => index !== -1);
+        }
 
-        setCardStates(prevStates => {
-          // Se siamo nel secondo round o successivi, tutte le carte nuove ricevute
-          // sono considerate "nuove" (tipicamente le ultime carte della mano)
-          if (prevStates.currentRound > 0 && newHandLength > 0) {
-            // Assumiamo che le nuove carte siano sempre le ultime aggiunte
-            // In un gioco di Cards Against Humanity, tipicamente si ricevono 1-2 carte nuove
-            const newCardsCount = Math.min(2, newHandLength); // Massimo 2 carte nuove
-            for (let i = newHandLength - newCardsCount; i < newHandLength; i++) {
-              newCardIndices.push(i);
-            }
-          }
-
-          return {
-            ...prevStates,
-            newCardIndices: newCardIndices
-          };
-        });
+        setCardStates(prevStates => ({
+          ...prevStates,
+          newCardIndices: newCardIndices
+        }));
 
         return {
           ...prev,
