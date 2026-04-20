@@ -46,12 +46,32 @@ const carteNere = JSON.parse(fs.readFileSync(carteNerePath, 'utf8'));
 // Inizializza il game manager con le carte
 const gameManager = new GameManager(carteBianche, carteNere);
 
+// Limiti di validazione input
+const MAX_NICKNAME_LENGTH = 20;
+const ROOM_CODE_LENGTH = 6;
+
+function validNickname(nickname) {
+  return typeof nickname === 'string'
+    && nickname.trim().length > 0
+    && nickname.length <= MAX_NICKNAME_LENGTH;
+}
+
+function validRoomCode(roomCode) {
+  return typeof roomCode === 'string'
+    && roomCode.length === ROOM_CODE_LENGTH
+    && /^[A-Z0-9]+$/i.test(roomCode);
+}
+
 // Gestione degli eventi socket
 io.on('connection', (socket) => {
   console.log(`Nuovo client connesso: ${socket.id}`);
 
   // Gestione creazione stanza
   socket.on('create-room', ({ nickname }) => {
+    if (!validNickname(nickname)) {
+      socket.emit('error', { message: 'Nickname non valido (max 20 caratteri).' });
+      return;
+    }
     console.log(`Creazione stanza richiesta da ${socket.id} con nickname: ${nickname}`);
 
     const { roomCode } = gameManager.createRoom(socket.id, nickname);
@@ -71,6 +91,14 @@ io.on('connection', (socket) => {
 
   // Gestione ingresso in stanza
   socket.on('join-room', ({ nickname, roomCode }) => {
+    if (!validNickname(nickname)) {
+      socket.emit('error', { message: 'Nickname non valido (max 20 caratteri).' });
+      return;
+    }
+    if (!validRoomCode(roomCode)) {
+      socket.emit('error', { message: 'Codice stanza non valido.' });
+      return;
+    }
     const result = gameManager.joinRoom(socket.id, nickname, roomCode);
 
     if (result.success) {
@@ -79,15 +107,8 @@ io.on('connection', (socket) => {
       const players = gameManager.getPlayersInRoom(roomCode);
       const hostId = gameManager.rooms[roomCode].hostId;
 
-      // Invia lo stato della stanza al nuovo giocatore immediatamente
-      socket.emit('room-players', {
-        players,
-        host: hostId,
-        code: roomCode
-      });
-
-      // Poi invia l'aggiornamento a tutti gli altri nella stanza
-      socket.to(roomCode).emit('room-players', {
+      // Invia lo stato aggiornato a tutti nella stanza (incluso il nuovo giocatore)
+      io.to(roomCode).emit('room-players', {
         players,
         host: hostId,
         code: roomCode
@@ -223,7 +244,13 @@ io.on('connection', (socket) => {
     if (room.roundStatus !== 'roundEnd') {
       socket.emit('error', { message: 'Non è possibile avviare un nuovo round ora.' });
       // Optionally send current state if it helps client debug or understand
-      // io.to(roomCode).emit('game-update', room.getGameState()); 
+      // io.to(roomCode).emit('game-update', room.getGameState());
+      return;
+    }
+
+    // Solo il giudice del round appena concluso può avviare il nuovo round
+    if (!room.isJudge(socket.id)) {
+      socket.emit('error', { message: 'Solo il giudice può avviare il prossimo round.' });
       return;
     }
 
@@ -266,7 +293,6 @@ io.on('connection', (socket) => {
 
   // Altri gestori di eventi socket...
 
-  // Gestione disconnessione
   // Gestione uscita volontaria dalla stanza
   socket.on('leave-room', ({ roomCode }) => {
     console.log(`Giocatore ${socket.id} sta uscendo dalla stanza ${roomCode}`);
@@ -274,73 +300,101 @@ io.on('connection', (socket) => {
     // Rimuovi il giocatore dalla stanza socket.io
     socket.leave(roomCode);
 
-    // Gestione disconnessione
-    socket.on('rejoin-room', ({ nickname, roomCode }) => {
-      console.log(`Tentativo di riconnessione da ${socket.id} a stanza ${roomCode} con nickname ${nickname}`);
+    // Rimuovi il giocatore dallo stato del gioco
+    gameManager.handleDisconnect(socket.id);
 
-      const result = gameManager.rejoinRoom(socket.id, nickname, roomCode);
-
-      if (result.success) {
-        socket.join(roomCode);
-
-        const players = gameManager.getPlayersInRoom(roomCode);
-        const hostId = gameManager.rooms[roomCode].hostId;
-        const room = gameManager.rooms[roomCode];
-
-        socket.emit('rejoin-success', {
-          players,
-          host: hostId,
-          code: roomCode,
-          gameStarted: room.gameStarted
-        });
-
-        // Se il gioco è iniziato, invia lo stato del gioco
-        if (room.gameStarted) {
-          const gameState = gameManager.getGameState(roomCode);
-          socket.emit('game-update', gameState);
-
-          // Invia la mano del giocatore
-          const player = room.players.find(p => p.id === socket.id);
-          if (player) {
-            socket.emit('hand-update', { hand: player.hand });
-          }
-        }
-
-        // Notifica gli altri giocatori
-        socket.to(roomCode).emit('room-players', {
-          players,
-          host: hostId,
-          code: roomCode
-        });
-      } else {
-        socket.emit('rejoin-failed', { message: result.error });
-      }
-    });
-
-    // Gestione disconnessione improvvisa
-    socket.on('disconnect', () => {
-      console.log(`Client disconnesso: ${socket.id}`);
-
-      const roomCode = gameManager.playerRooms[socket.id];
-      if (roomCode) {
-        const room = gameManager.rooms[roomCode];
-        if (room && room.gameStarted) {
-          // Se il gioco è iniziato, non rimuovere il giocatore immediatamente
-          // Marca il giocatore come disconnesso ma mantienilo nella partita
-          const player = room.players.find(p => p.id === socket.id);
-          if (player) {
-            player.disconnected = true;
-            console.log(`Giocatore ${player.nickname} marcato come disconnesso`);
-          }
-        } else {
-          // Se il gioco non è iniziato, rimuovi il giocatore normalmente
-          gameManager.removePlayer(socket.id);
-        }
-      }
-    });
+    // Notifica gli altri giocatori (se la stanza esiste ancora)
+    if (typeof roomCode === 'string' && gameManager.rooms[roomCode]) {
+      const players = gameManager.getPlayersInRoom(roomCode);
+      const hostId = gameManager.rooms[roomCode].hostId;
+      io.to(roomCode).emit('room-players', {
+        players,
+        host: hostId,
+        code: roomCode
+      });
+    }
 
     // Conferma al giocatore che è uscito
     socket.emit('left-room');
+  });
+
+  // Gestione riconnessione
+  socket.on('rejoin-room', ({ nickname, roomCode }) => {
+    if (!validNickname(nickname) || !validRoomCode(roomCode)) {
+      socket.emit('rejoin-failed', { message: 'Parametri non validi.' });
+      return;
+    }
+    console.log(`Tentativo di riconnessione da ${socket.id} a stanza ${roomCode} con nickname ${nickname}`);
+
+    const result = gameManager.rejoinRoom(socket.id, nickname, roomCode);
+
+    if (result.success) {
+      socket.join(roomCode);
+
+      const players = gameManager.getPlayersInRoom(roomCode);
+      const hostId = gameManager.rooms[roomCode].hostId;
+      const room = gameManager.rooms[roomCode];
+
+      socket.emit('rejoin-success', {
+        players,
+        host: hostId,
+        code: roomCode,
+        gameStarted: room.gameStarted
+      });
+
+      // Se il gioco è iniziato, invia lo stato del gioco
+      if (room.gameStarted) {
+        const gameState = gameManager.getGameState(roomCode);
+        socket.emit('game-update', gameState);
+
+        // Invia la mano del giocatore
+        const player = room.players.find(p => p.id === socket.id);
+        if (player) {
+          socket.emit('hand-update', { hand: player.hand });
+        }
+      }
+
+      // Notifica gli altri giocatori
+      socket.to(roomCode).emit('room-players', {
+        players,
+        host: hostId,
+        code: roomCode
+      });
+    } else {
+      socket.emit('rejoin-failed', { message: result.error });
+    }
+  });
+
+  // Gestione disconnessione improvvisa
+  socket.on('disconnect', () => {
+    console.log(`Client disconnesso: ${socket.id}`);
+
+    const roomCode = gameManager.playerRooms[socket.id];
+    if (roomCode) {
+      const room = gameManager.rooms[roomCode];
+      if (room && room.gameStarted) {
+        // Se il gioco è iniziato, non rimuovere il giocatore immediatamente
+        // Marca il giocatore come disconnesso ma mantienilo nella partita
+        const player = room.players.find(p => p.id === socket.id);
+        if (player) {
+          player.disconnected = true;
+          console.log(`Giocatore ${player.nickname} marcato come disconnesso`);
+        }
+      } else {
+        // Se il gioco non è iniziato, rimuovi il giocatore normalmente
+        gameManager.handleDisconnect(socket.id);
+        // Notifica gli altri giocatori rimasti
+        if (gameManager.rooms[roomCode]) {
+          const players = gameManager.getPlayersInRoom(roomCode);
+          const hostId = gameManager.rooms[roomCode].hostId;
+          io.to(roomCode).emit('room-players', {
+            players,
+            host: hostId,
+            code: roomCode
+          });
+        }
+      }
+    }
   });
 });
 

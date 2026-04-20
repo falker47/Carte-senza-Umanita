@@ -10,6 +10,7 @@ export class Room {
     this.judgeIndex = 0;
     this.blackCards = [...blackCards]; // Copia per non modificare l'originale
     this.whiteCards = [...whiteCards]; // Copia per non modificare l'originale
+    this.usedBlackCards = []; // Carte nere già giocate (per rimescolare quando finiscono)
     this.currentBlackCard = null;
     this.playedCards = []; // Array di { playerId, cards }
     this.maxPlayers = 10;
@@ -332,61 +333,41 @@ export class Room {
     };
   }
 
-  selectWinner(cardIndex) {
-    if (cardIndex < 0 || cardIndex >= this.playedCards.length) {
-      return { success: false, error: 'Indice carta non valido' };
-    }
-    
-    // This method's logic should be mostly covered by processJudgeSelection now.
-    // For now, let's keep it but it might be deprecated or refactored.
-    const winningCard = this.playedCards[cardIndex];
-    const winnerIndex = this.players.findIndex(player => player.id === winningCard.playerId);
-    
-    if (winnerIndex === -1) {
-      return { success: false, error: 'Giocatore vincente non trovato' };
-    }
-    
-    // Incrementa il punteggio del vincitore
-    this.players[winnerIndex].score += 1;
-    
-    // Verifica se il giocatore ha raggiunto il punteggio massimo
-    const gameOver = this.players[winnerIndex].score >= this.maxPoints;
-    
-    // Restituisci le informazioni sul vincitore
-    return { 
-      success: true, 
-      winnerInfo: {
-        playerId: winningCard.playerId,
-        nickname: this.players[winnerIndex].nickname,
-        score: this.players[winnerIndex].score,
-        cardIndex
-      },
-      gameOver,
-      winner: gameOver ? this.players[winnerIndex] : null
-    };
-  }
-  
   startNewRound() {
     // Incrementa il round
     this.currentRound += 1;
-    
+
     // Passa al prossimo giudice
     this.judgeIndex = (this.judgeIndex + 1) % this.players.length;
-    
+
+    // Archivia la carta nera del round appena concluso, se presente
+    if (this.currentBlackCard) {
+      this.usedBlackCards.push(this.currentBlackCard);
+      this.currentBlackCard = null;
+    }
+
     // Resetta le carte giocate
     this.playedCards = [];
     this.roundWinner = null;
     this.setRoundStatus('playing'); // Set round status to playing for the new round
-    
-    // Seleziona una nuova carta nera
+
+    // Seleziona una nuova carta nera; se il mazzo è vuoto, rimescola le carte usate
     if (this.blackCards.length === 0) {
-      // Se le carte nere sono finite, rimescola quelle usate
-      // Questo è un punto di miglioramento: sarebbe meglio tenere traccia delle carte usate
-      this.shuffleCards();
+      if (this.usedBlackCards.length === 0) {
+        console.error(`[Room ${this.roomCode}] Nessuna carta nera disponibile per il nuovo round.`);
+        return { success: false, error: 'Nessuna carta nera disponibile.' };
+      }
+      this.blackCards = this.usedBlackCards;
+      this.usedBlackCards = [];
+      // Fisher-Yates shuffle solo delle carte nere
+      for (let i = this.blackCards.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [this.blackCards[i], this.blackCards[j]] = [this.blackCards[j], this.blackCards[i]];
+      }
     }
-    
+
     this.currentBlackCard = this.blackCards.pop();
-    
+
     return { success: true };
   }
   

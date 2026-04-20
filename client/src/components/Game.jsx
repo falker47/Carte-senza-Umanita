@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../hooks/useSocket';
 import ThemeToggle from './ThemeToggle';
 import Card from './Card';
@@ -39,58 +39,60 @@ const Game = ({ roomCode, nickname, setGameState }) => {
 
   const socket = useSocket();
 
+  // Ref sempre aggiornato con lo stato più recente: evita stale closures
+  // negli handler socket senza forzare la ri-registrazione degli eventi.
+  const gameDataRef = useRef(gameData);
+  useEffect(() => {
+    gameDataRef.current = gameData;
+  }, [gameData]);
+
   useEffect(() => {
     if (!socket) return;
 
     socket.on('game-update', (data) => {
       console.log('Received game-update:', data);
 
+      const prev = gameDataRef.current;
+
       // Controlla se è iniziato un nuovo round
       const isNewRound = data.roundStatus === 'playing' &&
-        (gameData.roundStatus === 'roundEnd' || gameData.roundStatus === 'waiting');
+        (prev.roundStatus === 'roundEnd' || prev.roundStatus === 'waiting');
 
-      setGameData(prev => ({
-        ...prev,
+      // Calcola la logica di preservazione una volta sola, usando lo stato fresco dal ref
+      let shouldPreserveNewCards = false;
+      if (isNewRound) {
+        const myId = prev.players.find(p => p.nickname === nickname)?.id ?? null;
+        const wasJudge = prev.currentJudge === myId;
+        const becomingJudge = data.currentJudge === myId;
+        shouldPreserveNewCards = wasJudge || becomingJudge;
+
+        console.log('[DEBUG] Preservation Logic:', {
+          myId,
+          currentJudge: prev.currentJudge,
+          nextJudge: data.currentJudge,
+          wasJudge,
+          becomingJudge,
+          shouldPreserveNewCards
+        });
+      }
+
+      setGameData(prevState => ({
+        ...prevState,
         ...data,
-        hasPlayed: data.roundStatus === 'playing' && prev.roundStatus === 'playing'
-          ? prev.hasPlayed
+        hasPlayed: data.roundStatus === 'playing' && prevState.roundStatus === 'playing'
+          ? prevState.hasPlayed
           : false,
-        selectedCard: data.roundStatus === 'playing' && prev.roundStatus === 'playing'
-          ? prev.selectedCard
+        selectedCard: data.roundStatus === 'playing' && prevState.roundStatus === 'playing'
+          ? prevState.selectedCard
           : null
       }));
 
-      // Reset degli stati delle carte per nuovo round
       if (isNewRound) {
-        console.log('[DEBUG] isNewRound detected. Checking preservation logic...');
-        setCardStates(prev => {
-          // Identify if the current player is the one becoming judge or was the judge
-          // Note: gameData in this closure is from the previous render (before update)
-          const currentPlayer = gameData.players.find(p => p.nickname === nickname);
-          const myId = currentPlayer ? currentPlayer.id : null;
-
-          const wasJudge = gameData.currentJudge === myId;
-          const becomingJudge = data.currentJudge === myId;
-
-          // Preserve new cards if I was the judge (didn't play) or am becoming the judge (won't play)
-          const shouldPreserveNewCards = wasJudge || becomingJudge;
-
-          console.log('[DEBUG] Preservation Logic:', {
-            myId,
-            currentJudge: gameData.currentJudge,
-            nextJudge: data.currentJudge,
-            wasJudge,
-            becomingJudge,
-            shouldPreserveNewCards,
-            prevIndices: prev.newCardIndices
-          });
-
-          return {
-            playedCardIndices: [],
-            newCardIndices: shouldPreserveNewCards ? prev.newCardIndices : [],
-            currentRound: prev.currentRound + 1
-          };
-        });
+        setCardStates(prevStates => ({
+          playedCardIndices: [],
+          newCardIndices: shouldPreserveNewCards ? prevStates.newCardIndices : [],
+          currentRound: prevStates.currentRound + 1
+        }));
       }
 
       if (data.roundStatus !== 'judging') {
@@ -161,7 +163,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       socket.off('update-hand');
       socket.off('game-over');
     };
-  }, [socket, gameData.roundStatus]);
+  }, [socket, nickname]);
 
   // Aggiunto useEffect per richiedere lo stato appena il componente monta
   useEffect(() => {
@@ -312,27 +314,6 @@ const Game = ({ roomCode, nickname, setGameState }) => {
   // Funzione per annullare la selezione del giudice
   const handleJudgeCancel = () => {
     setJudgeSelection({ selectedIndex: null, isConfirming: false });
-  };
-
-  const handleCardPlay = () => {
-    console.log('handleCardPlay chiamata');
-    console.log('gameData.selectedCard:', gameData.selectedCard);
-
-    if (gameData.selectedCard === null || gameData.selectedCard === undefined) {
-      console.log('Nessuna carta selezionata, uscita dalla funzione');
-      return;
-    }
-
-    console.log('Invio play-card al server con cardIndex:', gameData.selectedCard);
-    socket.emit('play-card', {
-      roomCode,
-      cardIndex: gameData.selectedCard
-    });
-
-    setGameData(prev => ({
-      ...prev,
-      hasPlayed: true
-    }));
   };
 
   const handleLeaveGame = () => {
@@ -539,7 +520,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                   </button>
 
                   {/* Solo l'host può iniziare una nuova partita */}
-                  {gameData.hostId === nickname && (
+                  {gameData.players.find(p => p.nickname === nickname)?.id === gameData.hostId && (
                     <button
                       onClick={() => {
                         // Qui potresti aggiungere la logica per iniziare una nuova partita
