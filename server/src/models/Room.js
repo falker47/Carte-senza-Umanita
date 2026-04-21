@@ -1,26 +1,28 @@
+import { shuffleArray } from '../utils.js';
+
 export class Room {
   constructor(roomCode, hostId, hostNickname, whiteCards, blackCards) {
-    this.instanceId = Date.now() + '_' + Math.random().toString(36).substr(2, 9); // Aggiungi un ID univoco
-    console.log(`[Room ${roomCode}] Created with instanceId: ${this.instanceId}`);
+    this.instanceId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     this.roomCode = roomCode;
     this.hostId = hostId;
     this.players = [{ id: hostId, nickname: hostNickname, score: 0, hand: [] }];
     this.gameStarted = false;
     this.currentRound = 0;
     this.judgeIndex = 0;
-    this.blackCards = [...blackCards]; // Copia per non modificare l'originale
-    this.whiteCards = [...whiteCards]; // Copia per non modificare l'originale
-    this.usedBlackCards = []; // Carte nere già giocate (per rimescolare quando finiscono)
+    this.blackCards = [...blackCards];
+    this.whiteCards = [...whiteCards];
+    this.usedBlackCards = [];
+    this.usedWhiteCards = [];
     this.currentBlackCard = null;
-    this.playedCards = []; // Array di { playerId, cards }
+    this.playedCards = [];
     this.maxPlayers = 10;
     this.maxPoints = 5;
-    this.handSize = 7;    // Valore di default, sovrascritto da startGame
-    this.roundStatus = 'waiting'; // 'waiting', 'playing', 'judging', 'roundEnd', 'gameOver'
-    this.roundWinner = null; // playerId of the winner of the current round
-    this.gameWinner = null; // player object of the game winner
+    this.handSize = 7;
+    this.roundStatus = 'waiting';
+    this.roundWinner = null;
+    this.gameWinner = null;
     this.gameOver = false;
-    this.shuffledPlayedCards = null; // Aggiungi questa proprietà per memorizzare l'ordine mescolato
+    this.shuffledPlayedCards = null;
   }
 
   isFull() {
@@ -95,26 +97,25 @@ export class Room {
   }
 
   shuffleCards() {
-    // Fisher-Yates shuffle
-    for (let i = this.whiteCards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.whiteCards[i], this.whiteCards[j]] = [this.whiteCards[j], this.whiteCards[i]];
-    }
+    this.whiteCards = shuffleArray(this.whiteCards);
+    this.blackCards = shuffleArray(this.blackCards);
+  }
 
-    for (let i = this.blackCards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [this.blackCards[i], this.blackCards[j]] = [this.blackCards[j], this.blackCards[i]];
+  // Pesca una carta bianca, rimescolando lo scarto se il mazzo è vuoto.
+  drawWhiteCard() {
+    if (this.whiteCards.length === 0 && this.usedWhiteCards.length > 0) {
+      this.whiteCards = shuffleArray(this.usedWhiteCards);
+      this.usedWhiteCards = [];
     }
+    return this.whiteCards.pop();
   }
 
   dealCards() {
-    // Distribuisci 10 carte bianche a ogni giocatore
     this.players.forEach(player => {
       player.hand = [];
       for (let i = 0; i < this.handSize; i++) {
-        if (this.whiteCards.length > 0) {
-          player.hand.push(this.whiteCards.pop());
-        }
+        const card = this.drawWhiteCard();
+        if (card) player.hand.push(card);
       }
     });
   }
@@ -171,12 +172,10 @@ export class Room {
     // Aggiungi le carte giocate (ora nell'ordine di selezione)
     this.playedCards.push({ playerId, cards });
 
-    // Aggiungi nuove carte alla mano del giocatore
-    const cardsToAdd = Math.min(requiredCards, this.whiteCards.length);
-    for (let i = 0; i < cardsToAdd; i++) {
-      if (this.whiteCards.length > 0) {
-        this.players[playerIndex].hand.push(this.whiteCards.pop());
-      }
+    // Aggiungi nuove carte alla mano del giocatore (ricicla lo scarto se necessario)
+    for (let i = 0; i < requiredCards; i++) {
+      const card = this.drawWhiteCard();
+      if (card) this.players[playerIndex].hand.push(card);
     }
 
     return { success: true };
@@ -205,52 +204,28 @@ export class Room {
     );
   }
 
-  shuffleArray(array) {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }
-  
   setRoundStatus(status) {
     this.roundStatus = status;
     console.log(`[Room ${this.roomCode}] Round status set to: ${status}`);
-    
-    // Quando inizia la fase di giudizio, mescola le carte una sola volta
+
     if (status === 'judging') {
       this.shuffledPlayedCards = this.shufflePlayedCards();
-      console.log(`[Room ${this.roomCode}] Cards shuffled for judging phase:`, JSON.stringify(this.shuffledPlayedCards));
     }
-    
-    // Reset quando inizia un nuovo round
+
     if (status === 'playing') {
       this.shuffledPlayedCards = null;
     }
   }
 
   getPlayedCards() {
-    // Se siamo in fase di giudizio o il round è finito, usa l'ordine già mescolato
     if (this.shuffledPlayedCards && (this.roundStatus === 'judging' || this.roundStatus === 'roundEnd')) {
-      console.log(`[Room ${this.roomCode}] Returning cached shuffled cards:`, JSON.stringify(this.shuffledPlayedCards));
       return this.shuffledPlayedCards;
     }
-    
-    // Altrimenti restituisci le carte in ordine originale (per debug o altri scopi)
     return [...this.playedCards];
   }
 
   shufflePlayedCards() {
-    console.log(`[SERVER Room ${this.roomCode}] shufflePlayedCards: Original playedCards before shuffle:`, JSON.stringify(this.playedCards));
-    const cards = [...this.playedCards]; // Each element is { playerId, card }
-    // Fisher-Yates shuffle
-    for (let i = cards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cards[i], cards[j]] = [cards[j], cards[i]];
-    }
-    console.log(`[SERVER Room ${this.roomCode}] shufflePlayedCards: Shuffled cards:`, JSON.stringify(cards));
-    return cards; // Returns an array of { playerId, card }
+    return shuffleArray(this.playedCards);
   }
 
   awardPointToPlayer(playerId) {
@@ -277,28 +252,19 @@ export class Room {
 
   // This method will be called by GameManager.judgeSelectsWinner
   processJudgeSelection(selectedCardIndex) {
-    console.log(`[SERVER Room ${this.roomCode}] processJudgeSelection: Received selectedCardIndex: ${selectedCardIndex}`);
-    console.log(`[SERVER Room ${this.roomCode}] processJudgeSelection: Current this.playedCards (original order):`, JSON.stringify(this.playedCards));
-
     if (this.roundStatus !== 'judging') {
-      console.warn(`[SERVER Room ${this.roomCode}] processJudgeSelection: Attempted when roundStatus was ${this.roundStatus}.`);
+      console.warn(`[Room ${this.roomCode}] processJudgeSelection: Attempted when roundStatus was ${this.roundStatus}.`);
       return { success: false, error: 'Non è il momento di giudicare (controllo interno Room).' };
     }
 
-    // Usa le carte mescolate memorizzate invece di chiamare getPlayedCards() che rimescolerebbe
     const displayedPlayedCards = this.shuffledPlayedCards || this.playedCards;
-    console.log(`[SERVER Room ${this.roomCode}] processJudgeSelection: displayedPlayedCards (cached shuffled):`, JSON.stringify(displayedPlayedCards));
 
     if (selectedCardIndex < 0 || selectedCardIndex >= displayedPlayedCards.length) {
-      console.error(`[SERVER Room ${this.roomCode}] processJudgeSelection: Invalid selectedCardIndex: ${selectedCardIndex} for displayedPlayedCards length: ${displayedPlayedCards.length}`);
+      console.error(`[Room ${this.roomCode}] processJudgeSelection: Invalid selectedCardIndex: ${selectedCardIndex} for length: ${displayedPlayedCards.length}`);
       return { success: false, error: 'Indice carta selezionata non valido.' };
     }
 
-    // Identify the winning submission from the displayed list
     const winningSubmission = displayedPlayedCards[selectedCardIndex];
-    console.log(`[SERVER Room ${this.roomCode}] processJudgeSelection: Winning submission based on index ${selectedCardIndex}:`, JSON.stringify(winningSubmission));
-
-    // winningSubmission is an object like { playerId: 'someId', card: 'text of card' }
 
     const winnerId = winningSubmission.playerId;
     const winnerPlayer = this.players.find(p => p.id === winnerId);
@@ -315,7 +281,7 @@ export class Room {
 
     const gameWinner = this.checkForGameWinner();
 
-    console.log(`[Room ${this.roomCode}] Giudice ha selezionato la carta. Vincitore del round: ${winnerPlayer.nickname}. Carta: ${JSON.stringify(winningSubmission.card)}`);
+    console.log(`[Room ${this.roomCode}] Vincitore del round: ${winnerPlayer.nickname}`);
 
     return {
       success: true,
@@ -334,36 +300,34 @@ export class Room {
   }
 
   startNewRound() {
-    // Incrementa il round
     this.currentRound += 1;
-
-    // Passa al prossimo giudice
     this.judgeIndex = (this.judgeIndex + 1) % this.players.length;
 
-    // Archivia la carta nera del round appena concluso, se presente
     if (this.currentBlackCard) {
       this.usedBlackCards.push(this.currentBlackCard);
       this.currentBlackCard = null;
     }
 
-    // Resetta le carte giocate
+    // Sposta le carte bianche giocate nello scarto prima di resettare
+    for (const submission of this.playedCards) {
+      if (Array.isArray(submission.cards)) {
+        this.usedWhiteCards.push(...submission.cards);
+      } else if (submission.card) {
+        this.usedWhiteCards.push(submission.card);
+      }
+    }
+
     this.playedCards = [];
     this.roundWinner = null;
-    this.setRoundStatus('playing'); // Set round status to playing for the new round
+    this.setRoundStatus('playing');
 
-    // Seleziona una nuova carta nera; se il mazzo è vuoto, rimescola le carte usate
     if (this.blackCards.length === 0) {
       if (this.usedBlackCards.length === 0) {
         console.error(`[Room ${this.roomCode}] Nessuna carta nera disponibile per il nuovo round.`);
         return { success: false, error: 'Nessuna carta nera disponibile.' };
       }
-      this.blackCards = this.usedBlackCards;
+      this.blackCards = shuffleArray(this.usedBlackCards);
       this.usedBlackCards = [];
-      // Fisher-Yates shuffle solo delle carte nere
-      for (let i = this.blackCards.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [this.blackCards[i], this.blackCards[j]] = [this.blackCards[j], this.blackCards[i]];
-      }
     }
 
     this.currentBlackCard = this.blackCards.pop();

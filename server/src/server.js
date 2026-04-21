@@ -11,26 +11,22 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-const server = http.createServer(app);
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? 'https://carte-senza-umanita.onrender.com'  // URL aggiornato del client
+    ? 'https://carte-senza-umanita.onrender.com'
     : 'http://localhost:5173',
   methods: ['GET', 'POST'],
   credentials: true
 };
 
-// Modifica anche la configurazione Socket.IO
+app.use(cors(corsOptions));
+app.use(express.json());
+
+const server = http.createServer(app);
+
 const io = new Server(server, {
-  cors: {
-    origin: process.env.NODE_ENV === 'production'
-      ? 'https://carte-senza-umanita.onrender.com'  // URL aggiornato del client
-      : '*',
-    credentials: true
-  },
+  cors: corsOptions,
   pingTimeout: 60000,
   pingInterval: 25000,
   transports: ['websocket', 'polling']
@@ -379,6 +375,8 @@ io.on('connection', (socket) => {
         if (player) {
           player.disconnected = true;
           console.log(`Giocatore ${player.nickname} marcato come disconnesso`);
+          // Notifica gli altri client così vedono lo stato disconnesso aggiornato
+          io.to(roomCode).emit('game-update', room.getGameState());
         }
       } else {
         // Se il gioco non è iniziato, rimuovi il giocatore normalmente

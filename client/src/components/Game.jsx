@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSocket } from '../hooks/useSocket';
 import ThemeToggle from './ThemeToggle';
 import Card from './Card';
@@ -192,7 +192,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
     console.log('handleCardSelect chiamata con cardIndex:', cardIndex);
     console.log('gameData.roundStatus:', gameData.roundStatus);
     console.log('gameData.hasPlayed:', gameData.hasPlayed);
-    console.log('isCurrentPlayerJudge():', isCurrentPlayerJudge());
+    console.log('isCurrentPlayerJudge:', isCurrentPlayerJudge);
 
     // Non permettere selezione di carte già giocate
     if (cardStates.playedCardIndices.includes(cardIndex)) {
@@ -203,7 +203,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       console.log('Condizioni non soddisfatte per selezionare carta');
       return;
     }
-    if (isCurrentPlayerJudge()) {
+    if (isCurrentPlayerJudge) {
       console.log('Il giocatore è il giudice, non può selezionare carte');
       return;
     }
@@ -278,14 +278,14 @@ const Game = ({ roomCode, nickname, setGameState }) => {
   const handleJudgeCardSelect = (cardIndex) => {
     console.log('handleJudgeCardSelect chiamata con cardIndex:', cardIndex);
     console.log('gameData.roundStatus:', gameData.roundStatus);
-    console.log('isCurrentPlayerJudge():', isCurrentPlayerJudge());
+    console.log('isCurrentPlayerJudge:', isCurrentPlayerJudge);
 
     if (gameData.roundStatus !== 'judging') {
       console.log('Non è il momento di giudicare');
       return;
     }
 
-    if (!isCurrentPlayerJudge()) {
+    if (!isCurrentPlayerJudge) {
       console.log('Il giocatore non è il giudice');
       return;
     }
@@ -322,15 +322,15 @@ const Game = ({ roomCode, nickname, setGameState }) => {
   };
 
   const handleNextRound = () => {
-    if (gameData.roundStatus !== 'roundEnd' || !isCurrentPlayerJudge()) return;
+    if (gameData.roundStatus !== 'roundEnd' || !isCurrentPlayerJudge) return;
 
     socket.emit('start-new-round', { roomCode });
   };
 
-  const isCurrentPlayerJudge = () => {
+  const isCurrentPlayerJudge = useMemo(() => {
     const currentPlayer = gameData.players.find(p => p.nickname === nickname);
-    return currentPlayer && currentPlayer.id === gameData.currentJudge;
-  };
+    return !!(currentPlayer && currentPlayer.id === gameData.currentJudge);
+  }, [gameData.players, gameData.currentJudge, nickname]);
 
   const getStatusMessage = () => {
     if (gameData.gameWinner) {
@@ -342,7 +342,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
     }
 
     if (gameData.roundStatus === 'playing') {
-      if (isCurrentPlayerJudge()) {
+      if (isCurrentPlayerJudge) {
         return 'Sei il giudice di questo round. Attendi che gli altri giocatori scelgano le loro carte.';
       }
       return gameData.hasPlayed
@@ -351,7 +351,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
     }
 
     if (gameData.roundStatus === 'judging') {
-      if (isCurrentPlayerJudge()) {
+      if (isCurrentPlayerJudge) {
         if (judgeSelection.selectedIndex !== null) {
           return 'Carta selezionata! Conferma la tua scelta o seleziona un\'altra carta.';
         }
@@ -407,7 +407,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       </div>
 
       {/* Layout principale con griglia responsive ottimizzata */}
-      <div className={`grid grid-cols-1 gap-4 lg:gap-6 h-full ${isCurrentPlayerJudge()
+      <div className={`grid grid-cols-1 gap-4 lg:gap-6 h-full ${isCurrentPlayerJudge
         ? 'lg:grid-cols-3'
         : 'lg:grid-cols-4'
         }`}>
@@ -422,7 +422,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
         </div>
 
         {/* Colonna centrale - Contenuto principale del gioco (più spazio) */}
-        <div className={`order-2 lg:order-2 ${isCurrentPlayerJudge()
+        <div className={`order-2 lg:order-2 ${isCurrentPlayerJudge
           ? 'lg:col-span-2'
           : 'lg:col-span-2'
           }`}>
@@ -538,7 +538,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
           ) : (
             <>
               {/* Banner Giudice */}
-              {isCurrentPlayerJudge() && (
+              {isCurrentPlayerJudge && (
                 <div className="mb-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-2 rounded-lg shadow-lg border-2 border-yellow-400">
                   <div className="flex items-center justify-center space-x-2">
                     <span className="text-lg">⚖️</span>
@@ -581,7 +581,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                   {console.log('[CLIENT] Rendering playedCards for judge:', JSON.stringify(gameData.playedCards))}
 
                   {/* Pannello di controllo per il giudice - SPOSTATO IN ALTO CON DIMENSIONI FISSE */}
-                  {isCurrentPlayerJudge() && (
+                  {isCurrentPlayerJudge && (
                     <div className="mb-4 bg-gray-100 dark:bg-gray-700 p-2 rounded-lg control-panel-fixed !hidden lg:!block">
                       <div className="flex items-center justify-center">
                         {judgeSelection.selectedIndex !== null ? (
@@ -632,8 +632,8 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                           key={index}
                           type="white"
                           text={cardText}
-                          onClick={isCurrentPlayerJudge() ? () => handleJudgeCardSelect(index) : undefined}
-                          isSelectable={isCurrentPlayerJudge()}
+                          onClick={isCurrentPlayerJudge ? () => handleJudgeCardSelect(index) : undefined}
+                          isSelectable={isCurrentPlayerJudge}
                           isSelected={judgeSelection.selectedIndex === index}
                           isPending={judgeSelection.selectedIndex === index && judgeSelection.isConfirming}
                           isJudging={true}
@@ -660,7 +660,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
                       isJudging={true}
                     />
 
-                    {isCurrentPlayerJudge() && (
+                    {isCurrentPlayerJudge && (
                       <button
                         onClick={handleNextRound}
                         className="mt-4 btn btn-primary"
@@ -676,7 +676,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
         </div>
 
         {/* Colonna destra - Mano del giocatore ottimizzata */}
-        {!isCurrentPlayerJudge() && (
+        {!isCurrentPlayerJudge && (
           <div className="lg:col-span-1 order-3 flex flex-col">
             {gameData.roundStatus === 'playing' && (
               <div className="flex flex-col h-full">
@@ -781,7 +781,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       </div>
 
       {/* Footer sticky per mobile - pannello di controllo carte
-      {!isCurrentPlayerJudge() && gameData.roundStatus === 'playing' && (
+      {!isCurrentPlayerJudge && gameData.roundStatus === 'playing' && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-3 z-50">
           <div className="control-panel-fixed" style={{ minHeight: '50px' }}>
             <div className="flex flex-col items-center justify-center h-full">
@@ -825,7 +825,7 @@ const Game = ({ roomCode, nickname, setGameState }) => {
       )} */}
 
       {/* Footer sticky per mobile - pannello di controllo giudice */}
-      {isCurrentPlayerJudge() && gameData.roundStatus === 'judging' && (
+      {isCurrentPlayerJudge && gameData.roundStatus === 'judging' && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 z-50">
           <div className="control-panel-fixed" style={{ minHeight: '40px' }}>
             <div className="flex flex-col items-center justify-center h-full">

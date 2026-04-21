@@ -43,15 +43,9 @@ function Card({ type, text, onClick, isSelected, isWinner, isSelectable, isPendi
     );
   }
 
-  // Logica esistente per carte singole
-  console.log(`Card component received text:`, text);
-
   const formatText = (text) => {
     if (!text) return '';
-    console.log(`formatText input:`, text);
-    const formatted = text.replace(/_/g, '<span class="underline">_____</span>');
-    console.log(`formatText output:`, formatted);
-    return formatted;
+    return text.replace(/_/g, '<span class="underline">_____</span>');
   };
 
   const cardClasses = `
