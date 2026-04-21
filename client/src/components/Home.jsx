@@ -295,7 +295,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
             onKeyPress={handleKeyPress}
             placeholder="INSERISCI IL CODICE"
             className="w-full px-4 py-4 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 mb-4 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 text-center font-mono text-lg tracking-widest"
-            maxLength={6}
+            maxLength={5}
             style={{ textTransform: 'uppercase' }}
           />
           <button

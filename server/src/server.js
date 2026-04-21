@@ -48,7 +48,7 @@ const gameManager = new GameManager(carteBianche, carteNere);
 
 // Limiti di validazione input
 const MAX_NICKNAME_LENGTH = 20;
-const ROOM_CODE_LENGTH = 6;
+const ROOM_CODE_LENGTH = 5;
 
 function validNickname(nickname) {
   return typeof nickname === 'string'
@@ -350,7 +350,7 @@ io.on('connection', (socket) => {
         // Invia la mano del giocatore
         const player = room.players.find(p => p.id === socket.id);
         if (player) {
-          socket.emit('hand-update', { hand: player.hand });
+          socket.emit('update-hand', player.hand);
         }
       }
 

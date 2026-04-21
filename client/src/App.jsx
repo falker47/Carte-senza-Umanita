@@ -108,28 +108,44 @@ const App = () => {
     };
   }, []);
 
-  // SPOSTATO QUI DENTRO IL COMPONENTE - Tentativo di riconnessione
+  // Tentativo di riconnessione: registra i listener una sola volta per socket,
+  // e tenta il rejoin solo quando il socket si (ri)connette e c'è stato salvato
+  // in localStorage. Evita duplicazione di handler e rejoin spuri dopo create/join.
   useEffect(() => {
-    if (gameState !== 'home' && nickname && roomCode && socket?.connected) {
-      console.log('Tentativo di riconnessione a:', roomCode, 'con nickname:', nickname);
+    if (!socket) return;
 
-      socket.emit('rejoin-room', { nickname, roomCode });
+    const handleRejoinSuccess = (data) => {
+      console.log('Riconnessione riuscita:', data);
+      setGameState(data.gameStarted ? 'game' : 'lobby');
+    };
 
-      socket.on('rejoin-success', (data) => {
-        console.log('Riconnessione riuscita:', data);
-        if (data.gameStarted) {
-          setGameState('game');
-        } else {
-          setGameState('lobby');
-        }
-      });
+    const handleRejoinFailed = (error) => {
+      console.log('Riconnessione fallita:', error);
+      clearGameState();
+    };
 
-      socket.on('rejoin-failed', (error) => {
-        console.log('Riconnessione fallita:', error);
-        clearGameState();
-      });
-    }
-  }, [socket, gameState, nickname, roomCode]);
+    const tryRejoin = () => {
+      const savedGameState = localStorage.getItem('gameState');
+      const savedNickname = localStorage.getItem('nickname');
+      const savedRoomCode = localStorage.getItem('roomCode');
+      if (savedGameState && savedGameState !== 'home' && savedNickname && savedRoomCode) {
+        console.log('Tentativo di riconnessione a:', savedRoomCode, 'con nickname:', savedNickname);
+        socket.emit('rejoin-room', { nickname: savedNickname, roomCode: savedRoomCode });
+      }
+    };
+
+    socket.on('rejoin-success', handleRejoinSuccess);
+    socket.on('rejoin-failed', handleRejoinFailed);
+    socket.on('connect', tryRejoin);
+
+    if (socket.connected) tryRejoin();
+
+    return () => {
+      socket.off('rejoin-success', handleRejoinSuccess);
+      socket.off('rejoin-failed', handleRejoinFailed);
+      socket.off('connect', tryRejoin);
+    };
+  }, [socket]);
 
   const toggleTheme = () => {
     const newDarkMode = !darkMode;
