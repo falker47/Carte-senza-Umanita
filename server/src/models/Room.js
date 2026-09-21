@@ -138,7 +138,7 @@ export class Room {
     // Verifica che il numero di carte corrisponda ai blanks della carta nera
     const requiredCards = this.currentBlackCard ? this.currentBlackCard.blanks : 1;
     if (indices.length !== requiredCards) {
-      return { success: false, error: `Devi giocare esattamente ${requiredCards} carta${requiredCards > 1 ? 'e' : ''}` };
+      return { success: false, error: `Devi giocare esattamente ${requiredCards} ${requiredCards > 1 ? 'carte' : 'carta'}` };
     }
 
     // Verifica che tutti gli indici siano validi e unici
