@@ -1,8 +1,8 @@
 # Carte senza Umanità
 
-Unofficial Italian-language browser party game inspired by the fill-in-the-blank format popularized by **Cards Against Humanity**. The application uses a React client and a Node.js/Socket.io server for real-time rooms and rounds.
+Unofficial, non-commercial Italian-language browser party game built around a fill-in-the-blank card format. The application uses a React client and a Node.js/Socket.io server for real-time rooms and rounds.
 
-> This is an independent fan project. It is not affiliated with or endorsed by Cards Against Humanity.
+> Independent fan project. It is not affiliated with or endorsed by Cards Against Humanity.
 
 ![Carte senza Umanità preview](assets/preview.webp)
 
@@ -16,18 +16,16 @@ Unofficial Italian-language browser party game inspired by the fill-in-the-blank
 - Configurable target score and hand size.
 - Reconnection support for an existing nickname/room.
 - Responsive React interface with light/dark mode.
-- A repository-maintained Italian-language deck with **417 white cards** and **234 black cards**.
+- An Italian-language deck with **417 white cards** and **234 black cards**.
 
-The card data is **not presented as an official or complete Cards Against Humanity deck**. Its original external provenance was not documented when the data files were introduced, and later commits include project-specific additions and edits. See [CONTENT_NOTICE.md](CONTENT_NOTICE.md).
+## Live deployment
 
-## Demo / deployment
-
-The repository is configured for these Render endpoints:
+Configured Render endpoints:
 
 - Frontend: https://carte-senza-umanita.onrender.com/
 - Socket.io backend: https://carte-senza-umanita-server.onrender.com/
 
-Availability depends on the external Render services. A configured URL is not treated here as proof that the deployment is currently reachable.
+A manual smoke test on **2026-09-21** verified a real 3-player game through room join, round play, judge selection, point assignment and next-round flow.
 
 ## Architecture
 
@@ -43,7 +41,7 @@ server/
       |
       v
 server/data/
-  Italian-language card data
+  Italian-language card corpus
 ```
 
 The server owns room membership, judge rotation, hands, played cards, scoring and round transitions. The client renders the current state and emits player actions.
@@ -68,21 +66,14 @@ cd server
 npm test
 ```
 
-GitHub Actions also runs the server tests and a production client build on pushes and pull requests.
+GitHub Actions runs the server tests and a production client build on pushes and pull requests. The final GPR verification run passed both jobs.
 
 ## Run locally
 
 Requirements: a current Node.js LTS release and npm.
 
-Install dependencies:
-
 ```bash
 npm run install-all
-```
-
-Start client and server together:
-
-```bash
 npm run dev
 ```
 
@@ -91,20 +82,26 @@ Development endpoints:
 - client: http://localhost:5173
 - server: http://localhost:3001
 
-## Card data
+## Card corpus and provenance
 
-The current repository contains:
+The current corpus contains:
 
 - `server/data/carte_bianche.json`: 417 white cards;
 - `server/data/carte_nere.json`: 234 black cards;
-- black-card blank counts: 197 single-card, 33 two-card, 4 three-card prompts.
+- black prompts: 197 one-card, 33 two-card and 4 three-card prompts.
 
-The current files contain no duplicate white-card strings or duplicate black-card prompt text.
+The current files contain no duplicate white-card strings or duplicate black-prompt text.
 
-Because the original source/rights record for these card files is not documented, they are excluded from the source-code license. If this project is ever redistributed commercially, republished as a reusable dataset, or promoted as a fully cleared public product, the card corpus should first be replaced with demonstrably original/cleared content or have its provenance and permissions established.
+A provenance audit identified the historical Italian Cards Against Humanity translation and the CaH42project fan expansion as relevant upstream families. Preserved copies of both explicitly use **Creative Commons Attribution–NonCommercial–ShareAlike 2.0 Italy (CC BY-NC-SA 2.0 IT)**. Repository history then documents substantial project-specific additions, rewrites and cleanup.
 
-## License
+The complete mixed card corpus in this repository is therefore distributed as adapted fan material under **CC BY-NC-SA 2.0 IT**, with attribution and modification notes in [LICENSE-CARDS.md](LICENSE-CARDS.md) and [CONTENT_NOTICE.md](CONTENT_NOTICE.md).
 
-Source code authored for this repository is licensed under the MIT License; see [LICENSE](LICENSE).
+This does **not** grant trademark rights and does not imply affiliation or endorsement.
 
-The MIT license does **not** cover the card corpus under `server/data/` or third-party intellectual property. See [CONTENT_NOTICE.md](CONTENT_NOTICE.md).
+## Licenses
+
+- Repository-authored **source code**: [MIT](LICENSE).
+- **Card corpus** under `server/data/carte_*.json`: [CC BY-NC-SA 2.0 IT](LICENSE-CARDS.md).
+- Third-party trademarks and other rights remain with their respective owners.
+
+The project is non-commercial; no advertising, payment or donation integration is present in the repository.

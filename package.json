@@ -1,7 +1,7 @@
 {
   "name": "carte-senza-umanita",
   "version": "1.0.0",
-  "description": "Versione italiana di Cards Against Humanity - Gioco multiplayer real-time",
+  "description": "Fan project italiano non commerciale: party game multiplayer real-time a completamento di frasi",
   "main": "index.js",
   "scripts": {
     "client": "cd client && npm run dev",

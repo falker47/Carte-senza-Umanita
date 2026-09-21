@@ -107,7 +107,7 @@ function Card({ type, text, onClick, isSelected, isWinner, isSelectable, isPendi
       
       {type === 'white' && (
         <div className="absolute bottom-1 right-2 text-xs text-gray-400 font-medium">
-          Carte Senza Umanità ®
+          Carte Senza Umanità
         </div>
       )}
     </div>
