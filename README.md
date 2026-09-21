@@ -1,135 +1,110 @@
-# 🃏 Carte senza Umanità
+# Carte senza Umanità
 
-![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![Node.js](https://img.shields.io/badge/Node.js-server-green)
-![React](https://img.shields.io/badge/React-client-blue)
+Unofficial Italian-language browser party game inspired by the fill-in-the-blank format popularized by **Cards Against Humanity**. The application uses a React client and a Node.js/Socket.io server for real-time rooms and rounds.
 
-Versione italiana di **Cards Against Humanity** - Gioco multiplayer real-time direttamente nel tuo browser.
+> This is an independent fan project. It is not affiliated with or endorsed by Cards Against Humanity.
 
-## 📋 Descrizione
+![Carte senza Umanità preview](assets/preview.webp)
 
-**Carte senza Umanità** è un'applicazione web che porta il famoso ed irriverente gioco di carte sui vostri schermi, permettendo di giocare con amici in tempo reale ovunque vi troviate. Il progetto combina un frontend moderno realizzato con **React** e un backend robusto in **Node.js** che gestisce la logica di gioco istantanea tramite **Socket.io**.
+## What is implemented
 
-### ✨ Caratteristiche Principali
+- Real-time multiplayer rooms with Socket.io.
+- 3 to 10 players per room.
+- Host-controlled game start.
+- Rotating judge, anonymous shuffled submissions and score tracking.
+- One-, two- and three-card prompts.
+- Configurable target score and hand size.
+- Reconnection support for an existing nickname/room.
+- Responsive React interface with light/dark mode.
+- A repository-maintained Italian-language deck with **417 white cards** and **234 black cards**.
 
-*   🌍 **Multiplayer Online Real-time**: Unisciti e gioca con amici istantaneamente.
-*   📱 **Design Responsive**: Ottimizzato per desktop, tablet e smartphone.
-*   🌟 **Tag "Novità"**: Le nuove carte pescate vengono evidenziate per riconoscerle subito.
-*   🇮🇹 **Full Italian Localization**: Mazzo completo di **651 carte** (417 Bianche e 234 Nere) localizzato in italiano per il massimo divertimento.
+The card data is **not presented as an official or complete Cards Against Humanity deck**. Its original external provenance was not documented when the data files were introduced, and later commits include project-specific additions and edits. See [CONTENT_NOTICE.md](CONTENT_NOTICE.md).
 
----
+## Demo / deployment
 
-## 📸 Screenshots
+The repository is configured for these Render endpoints:
 
-| Lobby | Partita in Corso |
-|:---:|:---:|
-| ![Lobby Preview](https://via.placeholder.com/600x400?text=Inserisci+Screenshot+Lobby) | ![Game Preview](https://via.placeholder.com/600x400?text=Inserisci+Screenshot+Game) |
+- Frontend: https://carte-senza-umanita.onrender.com/
+- Socket.io backend: https://carte-senza-umanita-server.onrender.com/
 
----
+Availability depends on the external Render services. A configured URL is not treated here as proof that the deployment is currently reachable.
 
-## 🃏 Come si Gioca
+## Architecture
 
-Il gioco segue le regole classiche di *Cards Against Humanity*:
+```text
+client/
+  React + Vite
+      |
+      | Socket.io
+      v
+server/
+  Express + Socket.io
+  GameManager / Room
+      |
+      v
+server/data/
+  Italian-language card data
+```
 
-1.  **Il Giudice**: A ogni turno, un giocatore viene designato come "Card Czar" (Giudice).
-2.  **La Carta Nera**: Il Giudice pesca una **Carta Nera** che contiene una frase con degli spazi vuoti o una domanda.
-3.  **La Risposta**: Gli altri giocatori scelgono dalla loro mano la **Carta Bianca** (o le carte, se richiesto) che completa la frase nel modo più divertente, assurdo o politicamente scorretto possibile.
-4.  **Il Giudizio**: Il Giudice mescola le carte ricevute (virtualmente!) e le legge ad alta voce. Poi sceglie la sua preferita.
-5.  **Vittoria**: Il giocatore che ha giocato la carta scelta vince il punto. Il primo ad arrivare al punteggio prestabilito vince la partita!
+The server owns room membership, judge rotation, hands, played cards, scoring and round transitions. The client renders the current state and emits player actions.
 
----
+## Verification
 
-## 🛠️ Tecnologie Utilizzate
+Server-side game-flow tests use Node's built-in test runner and cover:
 
-### Frontend
-*   **React**: Libreria UI per interfacce dinamiche.
-*   **Vite**: Build tool di nuova generazione per uno sviluppo rapido.
-*   **Tailwind CSS**: Framework CSS utility-first per uno styling veloce e personalizzabile.
+- room creation and joining;
+- host-only start and the 3-player minimum;
+- dealing hands and selecting the first judge;
+- card submission and the judging phase;
+- winner selection and game-over behavior;
+- round rotation;
+- multi-card prompts;
+- reconnection of an existing player.
 
-### Backend
-*   **Node.js**: Runtime JavaScript per il server.
-*   **Socket.io**: Motore per la comunicazione bidirezionale in tempo reale.
-*   **Express**: Framework web per Node.js.
+Run them with:
 
----
+```bash
+cd server
+npm test
+```
 
-## 🚀 Per Iniziare
+GitHub Actions also runs the server tests and a production client build on pushes and pull requests.
 
-### Prerequisiti
+## Run locally
 
-Assicurati di avere installato sul tuo sistema:
-*   [Node.js](https://nodejs.org/) (Versione LTS raccomandata)
-*   **npm** (solitamente incluso con Node.js)
+Requirements: a current Node.js LTS release and npm.
 
-### 📥 Installazione
-
-Per configurare il progetto, inclusi sia il client che il server, esegui questo comando nella root del progetto:
+Install dependencies:
 
 ```bash
 npm run install-all
 ```
-Questo script installerà automaticamente tutte le dipendenze necessarie per la root, per la cartella `client` e per la cartella `server`.
 
----
-
-## 🎮 Utilizzo
-
-Per avviare l'intera applicazione in modalità sviluppo (Server + Client contemporaneamente):
+Start client and server together:
 
 ```bash
 npm run dev
 ```
 
-*   📡 **Server**: Si avvierà (default: porta `3000`).
-*   💻 **Client**: Si aprirà nel browser (solitamente `http://localhost:5173`).
+Development endpoints:
 
-### 📦 Altri comandi utili
+- client: http://localhost:5173
+- server: http://localhost:3001
 
-| Comando | Descrizione |
-| :--- | :--- |
-| `npm run client` | Avvia solo il frontend (Client) |
-| `npm run server` | Avvia solo il backend (Server) |
-| `npm run build` | Compila il client per la produzione |
-| `npm start` | Avvia il server in modalità produzione |
+## Card data
 
----
+The current repository contains:
 
-## ✏️ Personalizzazione
+- `server/data/carte_bianche.json`: 417 white cards;
+- `server/data/carte_nere.json`: 234 black cards;
+- black-card blank counts: 197 single-card, 33 two-card, 4 three-card prompts.
 
-Vuoi aggiungere le tue carte personali o modificare quelle esistenti? È facilissimo:
+The current files contain no duplicate white-card strings or duplicate black-card prompt text.
 
-1.  Naviga nella cartella `server/data/`.
-2.  Troverai tre file JSON principali:
-    *   `carte_bianche.json`: L'elenco delle risposte.
-    *   `carte_nere.json`: L'elenco delle domande/frasi.
-    *   `parole.json`: Parole extra usate per generare nickname o altro.
-3.  Modifica questi file aggiungendo le tue frasi preferite rispettando il formato JSON.
-4.  Riavvia il server per applicare le modifiche.
+Because the original source/rights record for these card files is not documented, they are excluded from the source-code license. If this project is ever redistributed commercially, republished as a reusable dataset, or promoted as a fully cleared public product, the card corpus should first be replaced with demonstrably original/cleared content or have its provenance and permissions established.
 
----
+## License
 
-## 🐞 Risoluzione Problemi
+Source code authored for this repository is licensed under the MIT License; see [LICENSE](LICENSE).
 
-### "Stiamo svegliando il server..."
-Se vedi questo messaggio all'avvio, non preoccuparti!
-Molti servizi di hosting gratuiti (come Render o Heroku) mettono in pausa il server dopo periodi di inattività. Il primo caricamento potrebbe richiedere **circa 60 secondi** mentre il server si riattiva. Nelle partite successive sarà istantaneo.
-
----
-
-## 📂 Struttura del Progetto
-
-```
-Carte senza Umanità/
-├── client/     # 🎨 Codice sorgente del frontend (React + Vite)
-├── server/     # ⚙️ Codice sorgente del backend (Node.js + Socket.io)
-│   └── data/   # 📝 File JSON con i mazzi di carte
-└── ...
-```
-
-## 🤝 Contributing
-
-I contributi sono benvenuti! Sentiti libero di aprire una *issue* o inviare una *pull request*.
-
-## 📄 Licenza
-
-Questo progetto è distribuito sotto licenza **MIT**. Vedi il file LICENSE per maggiori dettagli (se presente).
+The MIT license does **not** cover the card corpus under `server/data/` or third-party intellectual property. See [CONTENT_NOTICE.md](CONTENT_NOTICE.md).
