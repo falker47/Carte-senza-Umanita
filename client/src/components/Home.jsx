@@ -201,38 +201,38 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-2 lg:p-4">
+    <div className="flex flex-1 min-h-0 w-full flex-col items-center justify-start overflow-y-auto bg-gray-100 dark:bg-gray-900 px-2 py-2 sm:justify-center sm:px-3 sm:py-3 lg:px-4 lg:py-3">
       <div className="hidden lg:block absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative">
+      <div className="w-full max-w-[36rem] bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-4 sm:p-5 lg:p-6 border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative">
         {/* ThemeToggle per mobile - in alto a destra dentro la div con margini minimi */}
-        <div className="lg:hidden absolute top-1 right-1">
+        <div className="lg:hidden absolute top-2 right-2">
           <ThemeToggle />
         </div>
 
-        <h1 className="text-5xl font-extrabold text-center mb-1 mt-4 lg:mt-0 text-gray-800 dark:text-white tracking-tight">
+        <h1 className="px-8 sm:px-0 text-[2.15rem] sm:text-[2.65rem] lg:text-[2.9rem] leading-[0.92] font-extrabold text-center mb-1 mt-2 sm:mt-0 text-gray-800 dark:text-white tracking-[-0.03em]">
           CARTE SENZA UMANITÀ
         </h1>
-        <p className="text-center text-gray-600 dark:text-gray-300 mb-5 text-lg font-medium">
+        <p className="text-center text-gray-600 dark:text-gray-300 mb-3 sm:mb-4 text-base sm:text-lg leading-tight font-medium">
           Un gioco per persone orribili
         </p>
 
         {/* Pulsante Regole */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-3 sm:mb-4">
           <button
             onClick={() => setShowRules(true)}
-            className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors font-medium"
+            className="inline-flex items-center gap-1.5 text-sm sm:text-base text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors font-medium"
           >
             <span>Come si gioca</span>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-5" role="alert">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded-lg relative mb-3 text-sm leading-snug" role="alert">
             <strong className="font-bold">Errore: </strong>
             <span className="block sm:inline">{error}</span>
           </div>
@@ -240,19 +240,19 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
 
         {/* Messaggio di attesa risveglio server */}
         {isConnecting && !error && showWakeUpMessage && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded relative mb-5 animate-pulse" role="alert">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded-lg relative mb-3 text-sm leading-snug animate-pulse" role="alert">
             <div className="flex items-center">
-              <svg className="w-6 h-6 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2 flex-none animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span className="font-medium">Stiamo svegliando il server... Porta pazienza, ci vorrà massimo un minuto 😴➡️🙂</span>
+              <span className="font-medium leading-snug">Stiamo svegliando il server... Porta pazienza, ci vorrà massimo un minuto 😴➡️🙂</span>
             </div>
           </div>
         )}
 
-        <div className="mb-5">
-          <label htmlFor="nickname" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+        <div className="mb-3">
+          <label htmlFor="nickname" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
             👤 NICKNAME
           </label>
           <input
@@ -262,12 +262,12 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
             onChange={(e) => setLocalNickname(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Il tuo soprannome"
-            className="w-full px-4 py-4 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
+            className="w-full h-11 sm:h-12 px-3 py-0 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
           />
         </div>
 
         <button
-          className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${isConnecting || !socket?.connected
+          className={`w-full h-11 sm:h-12 px-4 py-0 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 transform hover:scale-[1.01] shadow-md hover:shadow-lg ${isConnecting || !socket?.connected
             ? 'bg-gray-400 cursor-not-allowed text-gray-700'
             : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-500/25'
             }`}
@@ -277,14 +277,14 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
           {isConnecting ? 'CONNESSIONE IN CORSO...' : 'CREA NUOVA STANZA'}
         </button>
 
-        <div className="my-6 flex items-center">
-          <hr className="flex-grow border-t-2 border-gray-300 dark:border-gray-600" />
-          <span className="mx-6 text-gray-500 dark:text-gray-400 font-semibold bg-white dark:bg-gray-800 px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600">oppure</span>
-          <hr className="flex-grow border-t-2 border-gray-300 dark:border-gray-600" />
+        <div className="my-3 sm:my-4 flex items-center">
+          <hr className="flex-grow border-t border-gray-300 dark:border-gray-600" />
+          <span className="mx-3 text-sm text-gray-500 dark:text-gray-400 font-semibold bg-white dark:bg-gray-800 px-3 py-0.5 rounded-full border border-gray-300 dark:border-gray-600">oppure</span>
+          <hr className="flex-grow border-t border-gray-300 dark:border-gray-600" />
         </div>
 
         <div>
-          <label htmlFor="roomCode" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">
+          <label htmlFor="roomCode" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
             🔑 CODICE STANZA
           </label>
           <input
@@ -294,12 +294,12 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
             onChange={(e) => setLocalRoomCode(e.target.value.toUpperCase())}
             onKeyPress={handleKeyPress}
             placeholder="INSERISCI IL CODICE"
-            className="w-full px-4 py-4 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 mb-4 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 text-center font-mono text-lg tracking-widest"
+            className="w-full h-11 sm:h-12 px-3 py-0 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 mb-3 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 text-center font-mono text-base sm:text-lg tracking-widest"
             maxLength={5}
             style={{ textTransform: 'uppercase' }}
           />
           <button
-            className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl ${isConnecting || !socket?.connected
+            className={`w-full h-11 sm:h-12 px-4 py-0 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 transform hover:scale-[1.01] shadow-md hover:shadow-lg ${isConnecting || !socket?.connected
               ? 'bg-gray-400 cursor-not-allowed text-gray-700'
               : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-green-500/25'
               }`}
