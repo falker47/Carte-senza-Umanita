@@ -198,7 +198,7 @@ const App = () => {
   return (
     <ThemeProvider value={{ darkMode, toggleTheme }}>
       <SocketProvider value={socket}>
-        <div className="min-h-[100svh] bg-texture text-gray-900 dark:text-white transition-colors duration-200 flex flex-col">
+        <div className={`${gameState === 'home' ? 'h-[100svh] overflow-hidden' : 'min-h-[100svh]'} bg-texture text-gray-900 dark:text-white transition-colors duration-200 flex flex-col`}>
           <main className="flex min-h-0 flex-1 flex-col pb-0">
             {renderContent()}
           </main>
