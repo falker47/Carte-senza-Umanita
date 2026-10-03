@@ -205,21 +205,21 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
       <div className="hidden lg:block absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-[36rem] bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-4 sm:p-5 lg:p-6 border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative">
+      <div className="w-full max-w-[31rem] bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-4 lg:p-5 border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative">
         {/* ThemeToggle per mobile - in alto a destra dentro la div con margini minimi */}
         <div className="lg:hidden absolute top-2 right-2">
           <ThemeToggle />
         </div>
 
-        <h1 className="px-8 sm:px-0 text-[2.15rem] sm:text-[2.65rem] lg:text-[2.9rem] leading-[0.92] font-extrabold text-center mb-1 mt-2 sm:mt-0 text-gray-800 dark:text-white tracking-[-0.03em]">
+        <h1 className="px-8 sm:px-0 text-[2.05rem] sm:text-[2.35rem] lg:text-[2.55rem] leading-[0.92] font-extrabold text-center mb-1 mt-2 sm:mt-0 text-gray-800 dark:text-white tracking-[-0.03em]">
           CARTE SENZA UMANITÀ
         </h1>
-        <p className="text-center text-gray-600 dark:text-gray-300 mb-3 sm:mb-4 text-base sm:text-lg leading-tight font-medium">
+        <p className="text-center text-gray-600 dark:text-gray-300 mb-2 sm:mb-3 text-base leading-tight font-medium">
           Un gioco per persone orribili
         </p>
 
         {/* Pulsante Regole */}
-        <div className="text-center mb-3 sm:mb-4">
+        <div className="text-center mb-2 sm:mb-3">
           <button
             onClick={() => setShowRules(true)}
             className="inline-flex items-center gap-1.5 text-sm sm:text-base text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors font-medium"
@@ -232,7 +232,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded-lg relative mb-3 text-sm leading-snug" role="alert">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-1.5 rounded-lg relative mb-2.5 text-sm leading-snug" role="alert">
             <strong className="font-bold">Errore: </strong>
             <span className="block sm:inline">{error}</span>
           </div>
@@ -240,7 +240,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
 
         {/* Messaggio di attesa risveglio server */}
         {isConnecting && !error && showWakeUpMessage && (
-          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-2 rounded-lg relative mb-3 text-sm leading-snug animate-pulse" role="alert">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-3 py-1.5 rounded-lg relative mb-2.5 text-sm leading-snug animate-pulse" role="alert">
             <div className="flex items-center">
               <svg className="w-4 h-4 mr-2 flex-none animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -251,7 +251,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
           </div>
         )}
 
-        <div className="mb-3">
+        <div className="mb-2.5">
           <label htmlFor="nickname" className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wide">
             👤 NICKNAME
           </label>
@@ -262,12 +262,12 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
             onChange={(e) => setLocalNickname(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Il tuo soprannome"
-            className="w-full h-11 sm:h-12 px-3 py-0 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
+            className="w-full h-10 sm:h-11 px-3 py-0 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500"
           />
         </div>
 
         <button
-          className={`w-full h-11 sm:h-12 px-4 py-0 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 transform hover:scale-[1.01] shadow-md hover:shadow-lg ${isConnecting || !socket?.connected
+          className={`w-full h-10 sm:h-11 px-4 py-0 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 transform hover:scale-[1.01] shadow-md hover:shadow-lg ${isConnecting || !socket?.connected
             ? 'bg-gray-400 cursor-not-allowed text-gray-700'
             : 'bg-blue-600 hover:bg-blue-700 text-white hover:shadow-blue-500/25'
             }`}
@@ -277,7 +277,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
           {isConnecting ? 'CONNESSIONE IN CORSO...' : 'CREA NUOVA STANZA'}
         </button>
 
-        <div className="my-3 sm:my-4 flex items-center">
+        <div className="my-2.5 sm:my-3 flex items-center">
           <hr className="flex-grow border-t border-gray-300 dark:border-gray-600" />
           <span className="mx-3 text-sm text-gray-500 dark:text-gray-400 font-semibold bg-white dark:bg-gray-800 px-3 py-0.5 rounded-full border border-gray-300 dark:border-gray-600">oppure</span>
           <hr className="flex-grow border-t border-gray-300 dark:border-gray-600" />
@@ -294,12 +294,12 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
             onChange={(e) => setLocalRoomCode(e.target.value.toUpperCase())}
             onKeyPress={handleKeyPress}
             placeholder="INSERISCI IL CODICE"
-            className="w-full h-11 sm:h-12 px-3 py-0 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 mb-3 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 text-center font-mono text-base sm:text-lg tracking-widest"
+            className="w-full h-10 sm:h-11 px-3 py-0 border-2 border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-900 placeholder-gray-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:border-gray-600 mb-2.5 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 text-center font-mono text-base sm:text-lg tracking-widest"
             maxLength={5}
             style={{ textTransform: 'uppercase' }}
           />
           <button
-            className={`w-full h-11 sm:h-12 px-4 py-0 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 transform hover:scale-[1.01] shadow-md hover:shadow-lg ${isConnecting || !socket?.connected
+            className={`w-full h-10 sm:h-11 px-4 py-0 rounded-xl font-bold text-sm sm:text-base transition-all duration-200 transform hover:scale-[1.01] shadow-md hover:shadow-lg ${isConnecting || !socket?.connected
               ? 'bg-gray-400 cursor-not-allowed text-gray-700'
               : 'bg-green-600 hover:bg-green-700 text-white hover:shadow-green-500/25'
               }`}
