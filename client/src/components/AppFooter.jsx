@@ -14,7 +14,7 @@ const AppFooter = ({ compact = false }) => {
       <p className={compact ? 'leading-tight' : undefined}>
         &copy; {currentYear}{' '}
         <a
-          href="https://falker47.github.io/Nexus-portfolio/"
+          href="https://falker47.github.io/"
           target="_blank"
           rel="noopener noreferrer"
           className="hover:underline text-cah-accent-dark dark:text-cah-accent-light"
