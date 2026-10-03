@@ -205,7 +205,7 @@ const Home = ({ setNickname, setRoomCode, setGameState, nickname, setInitialPlay
       <div className="hidden lg:block absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-[31rem] bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-4 lg:p-5 border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative">
+      <div className="w-full max-w-[30rem] bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-4 lg:p-5 border border-gray-200 dark:border-gray-700 backdrop-blur-sm relative">
         {/* ThemeToggle per mobile - in alto a destra dentro la div con margini minimi */}
         <div className="lg:hidden absolute top-2 right-2">
           <ThemeToggle />
