@@ -1,11 +1,17 @@
 import React from 'react';
 
-const AppFooter = () => {
+const AppFooter = ({ compact = false }) => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="text-center py-4 mt-auto text-sm text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <p>
+    <footer
+      className={`flex-none text-center mt-auto text-gray-600 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 ${
+        compact
+          ? 'px-3 py-2 text-xs sm:py-2.5 sm:text-sm leading-tight'
+          : 'py-4 text-sm'
+      }`}
+    >
+      <p className={compact ? 'leading-tight' : undefined}>
         Codice &copy; {currentYear}{' '}
         <a
           href="https://falker47.github.io/Nexus-portfolio/"
@@ -16,7 +22,7 @@ const AppFooter = () => {
           Maurizio Falconi @falker47
         </a>
       </p>
-      <p className="mt-1 text-xs">
+      <p className={compact ? 'mt-0.5 text-[11px] leading-tight sm:text-xs' : 'mt-1 text-xs'}>
         Fan project non commerciale · Mazzo{' '}
         <a
           href="https://creativecommons.org/licenses/by-nc-sa/2.0/it/"
