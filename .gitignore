@@ -1,0 +1,8 @@
+# Installed dependencies are restored from the committed package-lock.json files.
+# Run npm ci in the repository root, client/, and server/ as needed.
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Local npm diagnostic logs.
+npm-debug.log*
